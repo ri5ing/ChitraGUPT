@@ -4,6 +4,7 @@ import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { cn } from '@/lib/utils';
 import { FirebaseClientProvider } from '@/firebase';
+import { Provider as JotaiProvider } from 'jotai';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
 
@@ -30,9 +31,11 @@ export default function RootLayout({
           inter.variable
         )}
       >
-        <FirebaseClientProvider>
-          {children}
-        </FirebaseClientProvider>
+        <JotaiProvider>
+          <FirebaseClientProvider>
+            {children}
+          </FirebaseClientProvider>
+        </JotaiProvider>
         <Toaster />
       </body>
     </html>

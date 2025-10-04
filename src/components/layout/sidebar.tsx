@@ -14,11 +14,13 @@ import {
   Settings,
   ShieldCheck,
   UserCog,
+  Bot,
 } from 'lucide-react';
 import { Logo } from '@/components/icons';
 import type { UserProfile } from '@/types';
 import { Badge } from '../ui/badge';
 import { Skeleton } from '../ui/skeleton';
+import { ChatDialog } from '../chitragupt-guide/chat-dialog';
 
 type AppSidebarProps = {
   user: UserProfile | null;
@@ -74,6 +76,13 @@ export function AppSidebar({ user, isLoading }: AppSidebarProps) {
       </SidebarMenu>
 
       <SidebarFooter className="border-t p-2">
+        <ChatDialog>
+            <SidebarMenuButton variant="outline" className='justify-start w-full'>
+                <Bot />
+                <span className="font-semibold">ChitraGUPT</span>
+            </SidebarMenuButton>
+        </ChatDialog>
+
         {isLoading ? <Skeleton className="h-24 w-full" /> : user && (
           <div className="group-data-[collapsible=icon]:hidden p-2 space-y-2 bg-card rounded-lg border">
             <h4 className="font-semibold text-sm">Credits</h4>

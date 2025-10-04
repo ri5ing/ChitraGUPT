@@ -21,7 +21,6 @@ import {
   User as UserIcon,
 } from 'lucide-react';
 import type { UserProfile } from '@/types';
-import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth, useFirestore } from '@/firebase';
 import { signOut } from 'firebase/auth';
@@ -29,6 +28,8 @@ import { useRouter } from 'next/navigation';
 import { doc, runTransaction } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '../ui/skeleton';
+import { useAtom } from 'jotai';
+import { languageAtom } from '@/lib/language-atom';
 
 type AppHeaderProps = {
   user: UserProfile | null;
@@ -41,6 +42,7 @@ export function AppHeader({ user, isLoading }: AppHeaderProps) {
   const auth = useAuth();
   const firestore = useFirestore();
   const { toast } = useToast();
+  const [language, setLanguage] = useAtom(languageAtom);
   
   const pageTitle = pathname.split('/').pop()?.replace(/-/g, ' ') || 'Dashboard';
   const capitalizedTitle = pageTitle.charAt(0).toUpperCase() + pageTitle.slice(1);
@@ -88,9 +90,13 @@ export function AppHeader({ user, isLoading }: AppHeaderProps) {
     return '??';
   };
   
-  const handleTranslate = () => {
-    // In a real app, you would use a library like i18next to change the language
-    alert("This is a placeholder for the translation feature. We'll implement full Hindi translation soon!");
+  const toggleLanguage = () => {
+    const newLang = language === 'English' ? 'Hindi' : 'English';
+    setLanguage(newLang);
+    toast({
+      title: 'Language Changed',
+      description: `The application language is now set to ${newLang}.`,
+    });
   };
 
   return (
@@ -105,9 +111,9 @@ export function AppHeader({ user, isLoading }: AppHeaderProps) {
         </h1>
       </div>
       
-      <Button variant="ghost" size="sm" onClick={handleTranslate}>
+      <Button variant="ghost" size="sm" onClick={toggleLanguage}>
         <Languages className="mr-2 h-4 w-4" />
-        Translate to Hindi
+        {language === 'English' ? 'हिंदी में बदलें' : 'Switch to English'}
       </Button>
 
       {isLoading ? <Skeleton className="h-10 w-48" /> : user && (
