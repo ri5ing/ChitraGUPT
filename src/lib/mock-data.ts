@@ -4,7 +4,7 @@ import { Timestamp } from 'firebase/firestore';
 export const mockUsers: UserProfile[] = [
   {
     id: 'user-1',
-    name: 'Alice Johnson',
+    displayName: 'Alice Johnson',
     email: 'alice@example.com',
     avatarUrl: 'https://picsum.photos/seed/avatar1/100/100',
     role: 'client',
@@ -13,7 +13,7 @@ export const mockUsers: UserProfile[] = [
   },
   {
     id: 'user-2',
-    name: 'Bob Williams',
+    displayName: 'Bob Williams',
     email: 'bob@example.com',
     avatarUrl: 'https://picsum.photos/seed/avatar2/100/100',
     role: 'auditor',
@@ -22,7 +22,7 @@ export const mockUsers: UserProfile[] = [
   },
   {
     id: 'user-3',
-    name: 'Charlie Brown',
+    displayName: 'Charlie Brown',
     email: 'charlie@example.com',
     avatarUrl: 'https://picsum.photos/seed/avatar3/100/100',
     role: 'admin',
@@ -31,7 +31,7 @@ export const mockUsers: UserProfile[] = [
   },
   {
     id: 'user-4',
-    name: 'Diana Prince',
+    displayName: 'Diana Prince',
     email: 'diana@example.com',
     avatarUrl: 'https://picsum.photos/seed/avatar4/100/100',
     role: 'client',

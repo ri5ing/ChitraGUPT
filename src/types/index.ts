@@ -3,7 +3,6 @@ import { Timestamp } from "firebase/firestore";
 export type UserProfile = {
   id: string;
   displayName: string;
-  name?: string; // name is used in mock-data, displayName is used elsewhere.
   email: string;
   avatarUrl: string;
   role: 'client' | 'auditor' | 'admin';
