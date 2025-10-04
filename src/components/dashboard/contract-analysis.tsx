@@ -22,6 +22,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { mockUsers } from '@/lib/mock-data';
 import { FileText, GanttChartSquare, ListChecks, ShieldAlert, VenetianMask } from 'lucide-react';
+import { Label } from '@/components/ui/label';
 
 type ContractAnalysisProps = {
   contract: Contract;
