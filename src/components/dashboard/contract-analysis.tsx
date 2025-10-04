@@ -1,6 +1,6 @@
 'use client';
 
-import type { Contract, UserProfile } from '@/types';
+import type { Contract } from '@/types';
 import {
   Card,
   CardContent,
@@ -40,6 +40,8 @@ export function ContractAnalysis({ contract }: ContractAnalysisProps) {
     return 'Low Risk';
   }
 
+  const riskScore = contract.aiAnalysis?.riskScore ?? contract.riskScore ?? 0;
+
   return (
     <Tabs defaultValue="ai-analysis">
       <TabsList className="grid w-full grid-cols-2">
@@ -62,16 +64,13 @@ export function ContractAnalysis({ contract }: ContractAnalysisProps) {
                       <CardTitle className="text-lg">Risk Score</CardTitle>
                       <CardDescription>Overall contract risk assessment</CardDescription>
                     </div>
-                    {contract.riskScore && (
-                      <Badge className={`${getRiskColor(contract.riskScore)}`}>{getRiskText(contract.riskScore)}</Badge>
-                    )}
+                    
+                      <Badge className={`${getRiskColor(riskScore)}`}>{getRiskText(riskScore)}</Badge>
                   </div>
               </CardHeader>
               <CardContent>
-                <Progress value={contract.riskScore} className="w-full" indicatorClassName={getRiskColor(contract.riskScore || 0)} />
-                {contract.riskScore && (
-                  <p className="text-sm text-muted-foreground mt-2">A score of {contract.riskScore}/100 indicates a {getRiskText(contract.riskScore).toLowerCase()} level.</p>
-                )}
+                <Progress value={riskScore} className="w-full" indicatorClassName={getRiskColor(riskScore)} />
+                  <p className="text-sm text-muted-foreground mt-2">A score of {riskScore}/100 indicates a {getRiskText(riskScore).toLowerCase()} level.</p>
               </CardContent>
             </Card>
 
