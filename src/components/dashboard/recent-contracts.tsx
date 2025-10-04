@@ -47,7 +47,7 @@ export function RecentContracts() {
   const { toast } = useToast();
 
   const contractsQuery = useMemoFirebase(() => {
-    if (!user) return null;
+    if (!user || !firestore) return null; // This is the crucial fix
     const contractsRef = collection(firestore, `users/${user.uid}/contracts`);
     return query(contractsRef, orderBy('uploadDate', 'desc'), limit(4));
   }, [firestore, user]);
