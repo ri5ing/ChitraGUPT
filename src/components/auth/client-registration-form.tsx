@@ -14,6 +14,10 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Loader2 } from 'lucide-react';
 import { useState } from 'react';
+import { aadharKycFlow } from '@/ai/flows/aadhar-kyc-flow';
+import { useToast } from '@/hooks/use-toast';
+import { fileToDataUri } from '@/lib/utils';
+
 
 type ClientRegistrationFormProps = {
     onSubmit: (data: any) => void;
@@ -22,23 +26,59 @@ type ClientRegistrationFormProps = {
 };
 
 export function ClientRegistrationForm({ onSubmit, isLoading, onBack }: ClientRegistrationFormProps) {
-  const [file, setFile] = useState<File | null>(null);
+  const [kycFile, setKycFile] = useState<File | null>(null);
+  const [isScanningKyc, setIsScanningKyc] = useState(false);
+  const { toast } = useToast();
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0] || null;
+    setKycFile(file);
+  };
+
+  const handleFormSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    
+    let kycData = {};
+
+    // Only scan if a file is selected
+    if (kycFile) {
+        setIsScanningKyc(true);
+        try {
+            const aadharCardDataUri = await fileToDataUri(kycFile);
+            const kycResult = await aadharKycFlow({ aadharCardDataUri });
+            kycData = {
+                kyc: {
+                    aadharName: kycResult.fullName,
+                    aadharNumber: kycResult.aadharNumber,
+                }
+            };
+            toast({
+                title: "KYC Scanned Successfully",
+                description: `Name: ${kycResult.fullName}`,
+            });
+        } catch (error) {
+            console.error("KYC Scan failed:", error);
+            toast({
+                variant: 'destructive',
+                title: "KYC Scan Failed",
+                description: "Could not extract information from the uploaded document. You can proceed without it.",
+            });
+            // We don't block registration if KYC fails
+        } finally {
+            setIsScanningKyc(false);
+        }
+    }
+
     const formData = new FormData(event.currentTarget);
     const data = Object.fromEntries(formData.entries());
-    
-    // Here you would handle the file upload and OCR for KYC
-    // For now, we'll just pass the form data
-    console.log('KYC File:', file);
-
-    onSubmit(data);
+    onSubmit({ ...data, ...kycData });
   };
+  
+  const totalLoading = isLoading || isScanningKyc;
 
   return (
     <Card>
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleFormSubmit}>
         <CardHeader>
           <CardTitle>Client Details</CardTitle>
           <CardDescription>Tell us a bit more about yourself.</CardDescription>
@@ -46,7 +86,7 @@ export function ClientRegistrationForm({ onSubmit, isLoading, onBack }: ClientRe
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="mobile">Mobile Number (मोबाइल नंबर)</Label>
-            <Input id="mobile" name="mobile" type="tel" placeholder="e.g., +91 98765 43210" required />
+            <Input id="mobile" name="mobile" type="tel" placeholder="e.g., 98765 43210" required />
           </div>
           <div className="space-y-2">
             <Label htmlFor="organization">Organization (Optional) (संगठन (वैकल्पिक))</Label>
@@ -57,15 +97,16 @@ export function ClientRegistrationForm({ onSubmit, isLoading, onBack }: ClientRe
             <Textarea id="motive" name="motive" placeholder="e.g., To analyze vendor contracts" required />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="kyc">Upload Aadhar Card (PDF/Image) (आधार कार्ड अपलोड करें (पीडीएफ/छवि))</Label>
-            <Input id="kyc" name="kyc" type="file" accept="image/*,application/pdf" onChange={(e) => setFile(e.target.files?.[0] || null)} />
+            <Label htmlFor="kyc">Upload Aadhar Card (Optional) (आधार कार्ड अपलोड करें (वैकल्पिक))</Label>
+            <Input id="kyc" name="kyc" type="file" accept="image/*,application/pdf" onChange={handleFileChange} />
             <p className="text-xs text-muted-foreground">This will be scanned to verify your identity.</p>
           </div>
         </CardContent>
         <CardFooter className="flex justify-between">
-            <Button variant="ghost" type="button" onClick={onBack}>Back</Button>
-            <Button type="submit" className="bg-accent hover:bg-accent/90 text-accent-foreground" disabled={isLoading}>
-                {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Complete Registration'}
+            <Button variant="ghost" type="button" onClick={onBack} disabled={totalLoading}>Back</Button>
+            <Button type="submit" className="bg-accent hover:bg-accent/90 text-accent-foreground" disabled={totalLoading}>
+                {totalLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isScanningKyc ? 'Scanning ID...' : (isLoading ? 'Creating Account...' : 'Complete Registration')}
             </Button>
         </CardFooter>
       </form>

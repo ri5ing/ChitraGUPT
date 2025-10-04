@@ -15,6 +15,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { aadharKycFlow } from '@/ai/flows/aadhar-kyc-flow';
+import { useToast } from '@/hooks/use-toast';
+import { fileToDataUri } from '@/lib/utils';
 
 type AuditorRegistrationFormProps = {
     onSubmit: (data: any) => void;
@@ -23,22 +26,59 @@ type AuditorRegistrationFormProps = {
 };
 
 export function AuditorRegistrationForm({ onSubmit, isLoading, onBack }: AuditorRegistrationFormProps) {
-  const [file, setFile] = useState<File | null>(null);
+  const [kycFile, setKycFile] = useState<File | null>(null);
+  const [isScanningKyc, setIsScanningKyc] = useState(false);
+  const { toast } = useToast();
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0] || null;
+    setKycFile(file);
+  };
+
+  const handleFormSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    
+    let kycData = {};
+
+    if (kycFile) {
+        setIsScanningKyc(true);
+        try {
+            const aadharCardDataUri = await fileToDataUri(kycFile);
+            const kycResult = await aadharKycFlow({ aadharCardDataUri });
+            kycData = {
+                kyc: {
+                    aadharName: kycResult.fullName,
+                    aadharNumber: kycResult.aadharNumber,
+                }
+            };
+            toast({
+                title: "KYC Scanned Successfully",
+                description: `Name: ${kycResult.fullName}`,
+            });
+        } catch (error) {
+            console.error("KYC Scan failed:", error);
+            toast({
+                variant: 'destructive',
+                title: "KYC Scan Failed",
+                description: "Could not extract information from the uploaded document. Please ensure it's a clear image.",
+            });
+            setIsScanningKyc(false);
+            return;
+        } finally {
+            setIsScanningKyc(false);
+        }
+    }
+
     const formData = new FormData(event.currentTarget);
     const data = Object.fromEntries(formData.entries());
-
-    // Handle file upload for KYC
-    console.log('KYC File for Auditor:', file);
-
-    onSubmit(data);
+    onSubmit({ ...data, ...kycData });
   };
+
+  const totalLoading = isLoading || isScanningKyc;
 
   return (
     <Card>
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleFormSubmit}>
         <CardHeader>
           <CardTitle>Auditor Details</CardTitle>
           <CardDescription>Please provide your professional details to join as an auditor.</CardDescription>
@@ -47,7 +87,7 @@ export function AuditorRegistrationForm({ onSubmit, isLoading, onBack }: Auditor
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="mobile">Mobile Number (मोबाइल नंबर)</Label>
-              <Input id="mobile" name="mobile" type="tel" placeholder="e.g., +91 98765 43210" required />
+              <Input id="mobile" name="mobile" type="tel" placeholder="e.g., 98765 43210" required />
             </div>
             <div className="space-y-2">
                 <Label htmlFor="firm">Firm / Independent (फर्म / स्वतंत्र)</Label>
@@ -86,14 +126,15 @@ export function AuditorRegistrationForm({ onSubmit, isLoading, onBack }: Auditor
           </div>
           <div className="space-y-2">
             <Label htmlFor="kyc">Upload Aadhar Card (PDF/Image) (आधार कार्ड अपलोड करें (पीडीएफ/छवि))</Label>
-            <Input id="kyc" name="kyc" type="file" accept="image/*,application/pdf" onChange={(e) => setFile(e.target.files?.[0] || null)} required/>
+            <Input id="kyc" name="kyc" type="file" accept="image/*,application/pdf" onChange={handleFileChange} required/>
             <p className="text-xs text-muted-foreground">This will be scanned to verify your identity.</p>
           </div>
         </CardContent>
         <CardFooter className="flex justify-between">
-            <Button variant="ghost" type="button" onClick={onBack}>Back</Button>
-            <Button type="submit" className="bg-accent hover:bg-accent/90 text-accent-foreground" disabled={isLoading}>
-                {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Complete Registration'}
+            <Button variant="ghost" type="button" onClick={onBack} disabled={totalLoading}>Back</Button>
+            <Button type="submit" className="bg-accent hover:bg-accent/90 text-accent-foreground" disabled={totalLoading}>
+                {totalLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isScanningKyc ? 'Scanning ID...' : (isLoading ? 'Creating Account...' : 'Complete Registration')}
             </Button>
         </CardFooter>
       </form>
