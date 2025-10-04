@@ -1,6 +1,6 @@
 'use client';
 
-import type { Contract, User } from '@/types';
+import type { Contract, UserProfile } from '@/types';
 import {
   Card,
   CardContent,
@@ -66,12 +66,16 @@ export function ContractAnalysis({ contract }: ContractAnalysisProps) {
                       <CardTitle className="text-lg">Risk Score</CardTitle>
                       <CardDescription>Overall contract risk assessment</CardDescription>
                     </div>
-                    <Badge className={`${getRiskColor(contract.riskScore)}`}>{getRiskText(contract.riskScore)}</Badge>
+                    {contract.riskScore && (
+                      <Badge className={`${getRiskColor(contract.riskScore)}`}>{getRiskText(contract.riskScore)}</Badge>
+                    )}
                   </div>
               </CardHeader>
               <CardContent>
-                <Progress value={contract.riskScore} className="w-full" indicatorClassName={getRiskColor(contract.riskScore)} />
-                <p className="text-sm text-muted-foreground mt-2">A score of {contract.riskScore}/100 indicates a {getRiskText(contract.riskScore).toLowerCase()} level.</p>
+                <Progress value={contract.riskScore} className="w-full" indicatorClassName={getRiskColor(contract.riskScore || 0)} />
+                {contract.riskScore && (
+                  <p className="text-sm text-muted-foreground mt-2">A score of {contract.riskScore}/100 indicates a {getRiskText(contract.riskScore).toLowerCase()} level.</p>
+                )}
               </CardContent>
             </Card>
 
@@ -127,7 +131,7 @@ export function ContractAnalysis({ contract }: ContractAnalysisProps) {
                         <div className="flex-1 space-y-1">
                             <div className="flex items-center justify-between">
                                 <p className="font-semibold">{fb.auditorName}</p>
-                                <p className="text-xs text-muted-foreground">{new Date(fb.timestamp).toLocaleString()}</p>
+                                <p className="text-xs text-muted-foreground">{new Date(fb.timestamp.toDate()).toLocaleString()}</p>
                             </div>
                             <p className="text-sm text-muted-foreground p-3 bg-secondary rounded-lg">{fb.feedback}</p>
                         </div>
