@@ -97,8 +97,7 @@ export function UploadContractDialog() {
                 ...analysisResult,
                 id: crypto.randomUUID(),
             },
-            riskScore: analysisResult.riskScore,
-        } as Omit<Contract, 'id' | 'clientName'>);
+        } as Omit<Contract, 'id'>);
 
         // Decrement credit balance
         transaction.update(userRef, { creditBalance: newBalance });
