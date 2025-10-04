@@ -65,7 +65,6 @@ export function RecentContracts() {
           <TableHeader>
             <TableRow>
               <TableHead>Contract Title</TableHead>
-              <TableHead className="hidden sm:table-cell">Client</TableHead>
               <TableHead className="hidden md:table-cell">Uploaded</TableHead>
               <TableHead className="text-right">Status</TableHead>
               <TableHead className="w-[100px]"></TableHead>
@@ -75,7 +74,6 @@ export function RecentContracts() {
             {[...Array(3)].map((_, i) => (
               <TableRow key={i}>
                 <TableCell><Skeleton className="h-5 w-32" /></TableCell>
-                <TableCell className="hidden sm:table-cell"><Skeleton className="h-5 w-24" /></TableCell>
                 <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-20" /></TableCell>
                 <TableCell className="text-right"><Skeleton className="h-6 w-20 ml-auto" /></TableCell>
                 <TableCell className="text-right"><Skeleton className="h-8 w-[70px]" /></TableCell>
@@ -99,7 +97,6 @@ export function RecentContracts() {
         <TableHeader>
           <TableRow>
             <TableHead>Contract Title</TableHead>
-            <TableHead className="hidden sm:table-cell">Client</TableHead>
             <TableHead className="hidden md:table-cell">Uploaded</TableHead>
             <TableHead className="text-right">Status</TableHead>
             <TableHead className="w-[100px]"></TableHead>
@@ -112,7 +109,6 @@ export function RecentContracts() {
                 <TableCell>
                   <div className="font-medium">{contract.title}</div>
                 </TableCell>
-                <TableCell className="hidden sm:table-cell">{contract.clientName}</TableCell>
                 <TableCell className="hidden md:table-cell">
                   {contract.uploadDate ? format(contract.uploadDate.toDate(), 'P', { locale: enIN }) : 'N/A'}
                 </TableCell>
