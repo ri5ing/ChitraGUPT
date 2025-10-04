@@ -33,7 +33,7 @@ export function RegisterForm() {
     setIsLoading(true);
     setError(null);
 
-    const name = (event.target as any).elements.name.value;
+    const displayName = (event.target as any).elements.name.value;
     const email = (event.target as any).elements.email.value;
     const password = (event.target as any).elements.password.value;
 
@@ -45,7 +45,7 @@ export function RegisterForm() {
       const userRef = doc(firestore, 'users', user.uid);
       await setDoc(userRef, {
         id: user.uid,
-        name: name,
+        displayName: displayName,
         email: user.email,
         role: 'client',
         subscriptionPlan: 'Free',

@@ -66,7 +66,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
       </SidebarMenu>
 
       <SidebarFooter className="border-t p-2">
-         <div className="group-data-[collapsible=icon]:hidden p-2 space-y-2 bg-card rounded-lg">
+         <div className="group-data-[collapsible=icon]:hidden p-2 space-y-2 bg-card rounded-lg border">
             <h4 className="font-semibold text-sm">Credits</h4>
             <div className="flex justify-between items-center">
                 <span className="text-2xl font-bold">{user.creditBalance}</span>

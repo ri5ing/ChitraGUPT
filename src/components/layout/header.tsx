@@ -91,16 +91,16 @@ export function AppHeader({ user }: AppHeaderProps) {
             className="flex items-center gap-2 h-10 px-2"
           >
             <Avatar className="h-8 w-8">
-              <AvatarImage src={user.avatarUrl} alt={user.name} />
+              <AvatarImage src={user.avatarUrl} alt={user.displayName} />
               <AvatarFallback>
-                {user.name
+                {user.displayName
                   .split(' ')
                   .map((n) => n[0])
                   .join('')}
               </AvatarFallback>
             </Avatar>
             <div className="hidden text-left md:block">
-              <div className="text-sm font-medium">{user.name}</div>
+              <div className="text-sm font-medium">{user.displayName}</div>
               <div className="text-xs text-muted-foreground">{user.email}</div>
             </div>
             <ChevronDown className="hidden h-4 w-4 md:block" />
