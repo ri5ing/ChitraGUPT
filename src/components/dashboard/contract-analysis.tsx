@@ -34,7 +34,6 @@ import {
 import { format } from 'date-fns';
 import { enIN } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
-import { useToast } from '@/hooks/use-toast';
 import { ChatDialog } from '../chitragupt-guide/chat-dialog';
 import { RecommendAuditorDialog } from './recommend-auditor-dialog';
 import { AuditorChatDialog } from './auditor-chat-dialog';
@@ -74,7 +73,6 @@ const ensureArray = (content: string | string[] | undefined): string[] => {
 }
 
 export function ContractAnalysis({ contract }: ContractAnalysisProps) {
-  const { toast } = useToast();
   const firestore = useFirestore();
 
   const analysis = contract.aiAnalysis;
@@ -94,14 +92,6 @@ export function ContractAnalysis({ contract }: ContractAnalysisProps) {
 
   const { data: auditorProfile } = useDoc<UserProfile>(auditorRef);
   const { data: clientProfile } = useDoc<UserProfile>(clientRef);
-
-
-  const handleFeatureClick = (featureName: string) => {
-    toast({
-      title: 'Coming Soon!',
-      description: `${featureName} functionality will be implemented soon.`,
-    });
-  };
 
   return (
     <div className="space-y-6">
@@ -198,12 +188,6 @@ export function ContractAnalysis({ contract }: ContractAnalysisProps) {
                     </Button>
                 </ChatDialog>
                 <p className="text-xs text-muted-foreground">(1 credit for 3 chats)</p>
-                <div className="flex-grow"></div>
-                <RecommendAuditorDialog contractId={contract.id}>
-                    <Button variant="outline" className='w-full md:w-auto'>
-                        <Users className="mr-2 h-4 w-4" /> Recommend an Auditor
-                    </Button>
-                </RecommendAuditorDialog>
             </CardFooter>
         </Card>
         
@@ -246,9 +230,11 @@ export function ContractAnalysis({ contract }: ContractAnalysisProps) {
                   )}
                   {contract.status !== "In Review" && (
                     <>
-                      <Button variant="secondary" className="mt-4" onClick={() => handleFeatureClick('Request Review')}>
+                    <RecommendAuditorDialog contractId={contract.id}>
+                      <Button variant="secondary" className="mt-4">
                         <MessageSquareQuote className="mr-2 h-4 w-4" /> Request a Review
                       </Button>
+                    </RecommendAuditorDialog>
                       <p className="text-xs text-muted-foreground mt-1">(1 credit per chat)</p>
                     </>
                   )}
