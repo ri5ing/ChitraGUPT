@@ -61,7 +61,7 @@ export function AuditorChatDialog({ contract, auditorProfile, clientProfile }: A
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!input.trim() || !user) return;
+    if (!input.trim() || !user || !contract.userId || !contract.id) return;
 
     setIsLoading(true);
 
