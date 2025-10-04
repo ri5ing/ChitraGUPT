@@ -7,6 +7,10 @@ import type { Contract, UserProfile } from '@/types';
 import { collection, query, where, doc } from 'firebase/firestore';
 import { Skeleton } from '../ui/skeleton';
 
+const formatNumberIndian = (num: number) => {
+  return new Intl.NumberFormat('en-IN').format(num);
+};
+
 export function StatsCards() {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
@@ -32,22 +36,22 @@ export function StatsCards() {
   const stats = [
     {
       title: 'Credits Remaining',
-      value: currentUserProfile.creditBalance.toString(),
+      value: formatNumberIndian(currentUserProfile.creditBalance),
       icon: <CreditCard className="h-5 w-5 text-muted-foreground" />,
     },
     {
       title: 'Contracts Analyzed',
-      value: contracts.filter(c => c.aiAnalysis).length.toString(),
+      value: formatNumberIndian(contracts.filter(c => c.aiAnalysis).length),
       icon: <FileText className="h-5 w-5 text-muted-foreground" />,
     },
     {
       title: 'Active Reviews',
-      value: contracts.filter(c => c.status === 'In Review').length.toString(),
+      value: formatNumberIndian(contracts.filter(c => c.status === 'In Review').length),
       icon: <FileClock className="h-5 w-5 text-muted-foreground" />,
     },
     {
       title: 'Completed',
-      value: contracts.filter(c => c.status === 'Completed').length.toString(),
+      value: formatNumberIndian(contracts.filter(c => c.status === 'Completed').length),
       icon: <ShieldCheck className="h-5 w-5 text-muted-foreground" />,
     },
   ];

@@ -14,6 +14,7 @@ import { SidebarTrigger } from '@/components/ui/sidebar';
 import {
   ChevronDown,
   CreditCard,
+  Languages,
   LogOut,
   PlusCircle,
   Settings,
@@ -84,6 +85,11 @@ export function AppHeader({ user }: AppHeaderProps) {
     }
     return '??';
   };
+  
+  const handleTranslate = () => {
+    // In a real app, you would use a library like i18next to change the language
+    alert("This is a placeholder for the translation feature. We'll implement full Hindi translation soon!");
+  };
 
   return (
     <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm md:px-6">
@@ -96,6 +102,11 @@ export function AppHeader({ user }: AppHeaderProps) {
           {capitalizedTitle}
         </h1>
       </div>
+      
+      <Button variant="ghost" size="sm" onClick={handleTranslate}>
+        <Languages className="mr-2 h-4 w-4" />
+        Translate to Hindi
+      </Button>
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
@@ -104,7 +115,7 @@ export function AppHeader({ user }: AppHeaderProps) {
             className="flex items-center gap-2 h-10 px-2"
           >
             <Avatar className="h-8 w-8">
-              <AvatarImage src={user.avatarUrl} alt={user.displayName} />
+              <AvatarImage src={user.avatarUrl} alt={user.displayName || ''} />
               <AvatarFallback>
                 {getInitials()}
               </AvatarFallback>

@@ -22,6 +22,8 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { FileText, GanttChartSquare, ListChecks, ShieldAlert, VenetianMask } from 'lucide-react';
 import { Label } from '@/components/ui/label';
+import { format } from 'date-fns';
+import { enIN } from 'date-fns/locale';
 
 type ContractAnalysisProps = {
   contract: Contract;
@@ -40,7 +42,7 @@ export function ContractAnalysis({ contract }: ContractAnalysisProps) {
     return 'Low Risk';
   }
 
-  const riskScore = contract.aiAnalysis?.riskScore ?? contract.riskScore ?? 0;
+  const riskScore = contract.aiAnalysis?.riskScore ?? 0;
 
   return (
     <Tabs defaultValue="ai-analysis">
@@ -69,7 +71,7 @@ export function ContractAnalysis({ contract }: ContractAnalysisProps) {
                   </div>
               </CardHeader>
               <CardContent>
-                <Progress value={riskScore} className="w-full" indicatorClassName={getRiskColor(riskScore)} />
+                <Progress value={riskScore} className="w-full" />
                   <p className="text-sm text-muted-foreground mt-2">A score of {riskScore}/100 indicates a {getRiskText(riskScore).toLowerCase()} level.</p>
               </CardContent>
             </Card>
@@ -126,7 +128,7 @@ export function ContractAnalysis({ contract }: ContractAnalysisProps) {
                         <div className="flex-1 space-y-1">
                             <div className="flex items-center justify-between">
                                 <p className="font-semibold">{fb.auditorName}</p>
-                                <p className="text-xs text-muted-foreground">{new Date(fb.timestamp.toDate()).toLocaleString()}</p>
+                                <p className="text-xs text-muted-foreground">{format(fb.timestamp.toDate(), 'Pp', { locale: enIN })}</p>
                             </div>
                             <p className="text-sm text-muted-foreground p-3 bg-secondary rounded-lg">{fb.feedback}</p>
                         </div>

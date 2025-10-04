@@ -35,7 +35,7 @@ export default function Home() {
             <Link href="/login">Log In</Link>
           </Button>
           <Button asChild className="ml-2 bg-accent hover:bg-accent/90 text-accent-foreground">
-            <Link href="/login">Get Started</Link>
+            <Link href="/register">Get Started</Link>
           </Button>
         </nav>
       </header>
@@ -51,7 +51,7 @@ export default function Home() {
           </p>
           <div className="mt-8">
             <Button asChild size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground">
-              <Link href="/login">Upload Your First Contract</Link>
+              <Link href="/register">Upload Your First Contract</Link>
             </Button>
           </div>
         </section>
@@ -90,7 +90,7 @@ export default function Home() {
                 </p>
                 <div className="mt-8">
                     <Button asChild size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground">
-                        <Link href="/login">Start for Free</Link>
+                        <Link href="/register">Start for Free</Link>
                     </Button>
                 </div>
             </div>

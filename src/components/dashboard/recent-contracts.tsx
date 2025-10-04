@@ -23,6 +23,7 @@ import { useCollection, useFirestore, useUser, useMemoFirebase } from "@/firebas
 import type { Contract } from "@/types";
 import { collection, query, orderBy, limit } from "firebase/firestore";
 import { format } from "date-fns";
+import { enIN } from "date-fns/locale";
 import { Skeleton } from "../ui/skeleton";
 import { ContractAnalysis } from "./contract-analysis";
 import Link from "next/link";
@@ -113,7 +114,7 @@ export function RecentContracts() {
                 </TableCell>
                 <TableCell className="hidden sm:table-cell">{contract.clientName}</TableCell>
                 <TableCell className="hidden md:table-cell">
-                  {contract.uploadDate ? format(contract.uploadDate.toDate(), 'PPP') : 'N/A'}
+                  {contract.uploadDate ? format(contract.uploadDate.toDate(), 'P', { locale: enIN }) : 'N/A'}
                 </TableCell>
                 <TableCell className="text-right">
                   <Badge variant={getStatusVariant(contract.status)} className="capitalize">
