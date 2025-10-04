@@ -9,7 +9,6 @@ import { AppHeader } from '@/components/layout/header';
 import { useDoc, useUser, useFirestore, useMemoFirebase } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import { UserProfile } from '@/types';
-import { Skeleton } from '@/components/ui/skeleton';
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const { user, isUserLoading } = useUser();
@@ -29,52 +28,33 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     }
   }, [isUserLoading, user, router]);
 
-
-  if (isUserLoading || isProfileLoading || !user || !userProfile) {
-    return <DashboardSkeleton />;
-  }
-
   return (
     <SidebarProvider>
       <div className="flex min-h-screen">
-        <AppSidebar user={userProfile} />
+        <AppSidebar user={userProfile} isLoading={isUserLoading || isProfileLoading} />
         <div className="flex flex-col flex-1">
-          <AppHeader user={userProfile} />
+          <AppHeader user={userProfile} isLoading={isUserLoading || isProfileLoading} />
           <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
-            {children}
+            {isUserLoading || isProfileLoading ? (
+              <div className="space-y-6">
+                <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                  <div>
+                    <h2 className="text-2xl font-bold tracking-tight font-headline">Welcome back!</h2>
+                    <p className="text-muted-foreground">Here's a summary of your contract activity.</p>
+                  </div>
+                </div>
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                    <div className="h-28 bg-muted rounded-lg animate-pulse"></div>
+                    <div className="h-28 bg-muted rounded-lg animate-pulse"></div>
+                    <div className="h-28 bg-muted rounded-lg animate-pulse"></div>
+                    <div className="h-28 bg-muted rounded-lg animate-pulse"></div>
+                </div>
+                <div className="h-96 bg-muted rounded-lg animate-pulse"></div>
+              </div>
+            ) : children}
           </main>
         </div>
       </div>
     </SidebarProvider>
   );
-}
-
-function DashboardSkeleton() {
-  return (
-    <div className="flex min-h-screen">
-      <div className="w-64 border-r p-4">
-        <Skeleton className="h-10 w-32 mb-8" />
-        <div className="space-y-4">
-          <Skeleton className="h-8 w-full" />
-          <Skeleton className="h-8 w-full" />
-          <Skeleton className="h-8 w-full" />
-        </div>
-      </div>
-      <div className="flex-1">
-        <header className="h-16 border-b flex items-center justify-end px-6">
-          <Skeleton className="h-10 w-48" />
-        </header>
-        <main className="p-8 space-y-6">
-          <Skeleton className="h-10 w-64" />
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <Skeleton className="h-28" />
-            <Skeleton className="h-28" />
-            <Skeleton className="h-28" />
-            <Skeleton className="h-28" />
-          </div>
-          <Skeleton className="h-96" />
-        </main>
-      </div>
-    </div>
-  )
 }

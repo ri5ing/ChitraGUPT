@@ -18,12 +18,14 @@ import {
 import { Logo } from '@/components/icons';
 import type { UserProfile } from '@/types';
 import { Badge } from '../ui/badge';
+import { Skeleton } from '../ui/skeleton';
 
 type AppSidebarProps = {
-  user: UserProfile;
+  user: UserProfile | null;
+  isLoading: boolean;
 };
 
-export function AppSidebar({ user }: AppSidebarProps) {
+export function AppSidebar({ user, isLoading }: AppSidebarProps) {
   const commonLinks = [
     { href: '/dashboard', icon: <LayoutDashboard />, label: 'Dashboard' },
     { href: '#', icon: <FileText />, label: 'Contracts' },
@@ -39,7 +41,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
     ],
   };
 
-  const menuItems = [...commonLinks, ...roleLinks[user.role]];
+  const menuItems = user ? [...commonLinks, ...roleLinks[user.role]] : commonLinks;
 
   return (
     <Sidebar>
@@ -53,7 +55,13 @@ export function AppSidebar({ user }: AppSidebarProps) {
       </SidebarHeader>
 
       <SidebarMenu className="flex-1 p-2">
-        {menuItems.map((item) => (
+        {isLoading ? (
+          <div className='space-y-2'>
+            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-8 w-full" />
+          </div>
+        ) : menuItems.map((item) => (
           <SidebarMenuItem key={item.href}>
             <SidebarMenuButton asChild>
               <Link href={item.href}>
@@ -66,14 +74,16 @@ export function AppSidebar({ user }: AppSidebarProps) {
       </SidebarMenu>
 
       <SidebarFooter className="border-t p-2">
-         <div className="group-data-[collapsible=icon]:hidden p-2 space-y-2 bg-card rounded-lg border">
+        {isLoading ? <Skeleton className="h-24 w-full" /> : user && (
+          <div className="group-data-[collapsible=icon]:hidden p-2 space-y-2 bg-card rounded-lg border">
             <h4 className="font-semibold text-sm">Credits</h4>
             <div className="flex justify-between items-center">
                 <span className="text-2xl font-bold">{user.creditBalance}</span>
                 <Badge variant={user.creditBalance > 0 ? "secondary" : "destructive"}>{user.creditBalance > 0 ? "Active" : "Empty"}</Badge>
             </div>
             <p className="text-xs text-muted-foreground">You have {user.creditBalance} credits remaining.</p>
-        </div>
+          </div>
+        )}
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton>
