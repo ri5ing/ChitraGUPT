@@ -40,7 +40,7 @@ export function AuditorChatDialog({ contract, auditorProfile, clientProfile }: A
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   const messagesQuery = useMemoFirebase(() => {
-    if (!user || !contract.userId || !contract.id) return null;
+    if (!firestore || !user || !contract.userId || !contract.id) return null;
     const chatPath = `users/${contract.userId}/contracts/${contract.id}/chats`;
     return query(collection(firestore, chatPath), orderBy('timestamp', 'asc'));
   }, [firestore, user, contract.id, contract.userId]);
