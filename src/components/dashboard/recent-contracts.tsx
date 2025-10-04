@@ -1,6 +1,6 @@
 'use client';
 
-import Link from "next/link";
+import { useState } from "react";
 import {
   Table,
   TableBody,
@@ -18,16 +18,19 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, FileWarning, Loader2 } from "lucide-react";
+import { ArrowRight, ChevronDown, ChevronUp } from "lucide-react";
 import { useCollection, useFirestore, useUser, useMemoFirebase } from "@/firebase";
 import type { Contract } from "@/types";
 import { collection, query, orderBy, limit } from "firebase/firestore";
 import { format } from "date-fns";
 import { Skeleton } from "../ui/skeleton";
+import { ContractAnalysis } from "./contract-analysis";
+import Link from "next/link";
 
 export function RecentContracts() {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
+  const [expandedContractId, setExpandedContractId] = useState<string | null>(null);
 
   const contractsQuery = useMemoFirebase(() => {
     if (!user) return null;
@@ -48,6 +51,10 @@ export function RecentContracts() {
       default:
         return "outline";
     }
+  };
+
+  const handleToggleRow = (contractId: string) => {
+    setExpandedContractId(prevId => prevId === contractId ? null : contractId);
   };
 
   const renderContent = () => {
@@ -99,25 +106,37 @@ export function RecentContracts() {
         </TableHeader>
         <TableBody>
           {contracts.map((contract) => (
-            <TableRow key={contract.id}>
-              <TableCell>
-                <div className="font-medium">{contract.title}</div>
-              </TableCell>
-              <TableCell className="hidden sm:table-cell">{contract.clientName}</TableCell>
-              <TableCell className="hidden md:table-cell">
-                {contract.uploadDate ? format(contract.uploadDate.toDate(), 'PPP') : 'N/A'}
-              </TableCell>
-              <TableCell className="text-right">
-                <Badge variant={getStatusVariant(contract.status)} className="capitalize">
-                  {contract.status}
-                </Badge>
-              </TableCell>
-              <TableCell className="text-right">
-                  <Button variant="outline" size="sm" asChild>
-                      <Link href={`/dashboard/contracts/${contract.id}`}>View</Link>
-                  </Button>
-              </TableCell>
-            </TableRow>
+            <>
+              <TableRow key={contract.id} onClick={() => handleToggleRow(contract.id)} className="cursor-pointer">
+                <TableCell>
+                  <div className="font-medium">{contract.title}</div>
+                </TableCell>
+                <TableCell className="hidden sm:table-cell">{contract.clientName}</TableCell>
+                <TableCell className="hidden md:table-cell">
+                  {contract.uploadDate ? format(contract.uploadDate.toDate(), 'PPP') : 'N/A'}
+                </TableCell>
+                <TableCell className="text-right">
+                  <Badge variant={getStatusVariant(contract.status)} className="capitalize">
+                    {contract.status}
+                  </Badge>
+                </TableCell>
+                <TableCell className="text-right">
+                    <Button variant="outline" size="sm" >
+                        {expandedContractId === contract.id ? <ChevronUp/> : <ChevronDown/>}
+                        <span className="ml-2">View</span>
+                    </Button>
+                </TableCell>
+              </TableRow>
+              {expandedContractId === contract.id && (
+                <TableRow>
+                  <TableCell colSpan={5}>
+                    <div className="p-4 bg-secondary/50 rounded-lg">
+                      <ContractAnalysis contract={contract} />
+                    </div>
+                  </TableCell>
+                </TableRow>
+              )}
+            </>
           ))}
         </TableBody>
       </Table>
