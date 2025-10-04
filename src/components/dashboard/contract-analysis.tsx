@@ -20,16 +20,12 @@ import { Progress } from '@/components/ui/progress';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { mockUsers } from '@/lib/mock-data';
 import { FileText, GanttChartSquare, ListChecks, ShieldAlert, VenetianMask } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 
 type ContractAnalysisProps = {
   contract: Contract;
 };
-
-// Assuming the logged-in user is an auditor for feedback purposes
-const auditorUser = mockUsers.find(u => u.role === 'auditor')!;
 
 export function ContractAnalysis({ contract }: ContractAnalysisProps) {
 
