@@ -20,11 +20,13 @@ const ContractSummaryAndRiskAssessmentInputSchema = z.object({
 export type ContractSummaryAndRiskAssessmentInput = z.infer<typeof ContractSummaryAndRiskAssessmentInputSchema>;
 
 const ContractSummaryAndRiskAssessmentOutputSchema = z.object({
-  summary: z.string().describe('A concise summary of the contract.'),
-  riskAssessment: z.string().describe('An assessment of potential risks associated with the contract.'),
-  missingClauses: z.array(z.string()).describe('List of potentially missing clauses in the contract.'),
-  recommendations: z.string().describe('Recommendations for the client based on the contract analysis.'),
+  summary: z.array(z.string()).describe('A concise summary of the key terms of the contract, presented as a list of points.'),
+  riskAssessment: z.array(z.string()).describe('An assessment of potential risks associated with the contract, presented as a list of points.'),
+  missingClauses: z.array(z.string()).describe('List of any important clauses that seem to be missing from the contract.'),
+  recommendations: z.array(z.string()).describe('Recommendations for the client to improve their position, presented as a list of points.'),
   riskScore: z.number().describe('A numerical risk score from 0 to 100, where 100 is the highest risk.'),
+  aiConfidenceScore: z.number().describe('A score from 0 to 100 indicating the AI\'s confidence in its analysis.'),
+  documentSeverity: z.enum(['Low', 'Medium', 'High', 'Critical']).describe('The overall severity level of the document.'),
 });
 export type ContractSummaryAndRiskAssessmentOutput = z.infer<typeof ContractSummaryAndRiskAssessmentOutputSchema>;
 
@@ -36,14 +38,16 @@ const prompt = ai.definePrompt({
   name: 'contractSummaryAndRiskAssessmentPrompt',
   input: {schema: ContractSummaryAndRiskAssessmentInputSchema},
   output: {schema: ContractSummaryAndRiskAssessmentOutputSchema},
-  prompt: `You are an expert legal analyst specializing in contract review.
+  prompt: `You are an expert legal analyst specializing in contract review. Your response must be in a formal, point-by-point format.
 
-You will analyze the contract and provide:
-1. A summary of the key terms.
-2. An assessment of potential risks.
-3. A list of any important clauses that seem to be missing.
-4. Recommendations for the client to improve their position.
-5. A risk score between 0 and 100, where 0 is no risk and 100 is extremely high risk.
+Analyze the contract provided and provide the following in a structured manner:
+1.  **Summary**: A list of key points summarizing the contract's main terms.
+2.  **Risk Assessment**: A bulleted list detailing potential risks.
+3.  **Missing Clauses**: A list of important clauses that appear to be missing.
+4.  **Recommendations**: A list of actionable recommendations for the client.
+5.  **Risk Score**: A numerical score from 0 to 100, where 100 is extremely high risk.
+6.  **AI Confidence Score**: Your confidence in this analysis from 0-100.
+7.  **Document Severity**: The overall severity of this contract, categorized as 'Low', 'Medium', 'High', or 'Critical'.
 
 Analyze the following contract.
 

@@ -25,24 +25,22 @@ export type Contract = {
   id: string;
   title: string;
   userId: string;
-  clientName: string;
   status: 'Pending' | 'In Review' | 'Completed' | 'Action Required';
   uploadDate: Timestamp;
   fileName: string;
   description?: string;
-  riskScore?: number;
-  analysisReportId?: string;
   aiAnalysis?: AIAnalysisReport;
-  auditorFeedback?: AuditorFeedback[];
 };
 
 export type AIAnalysisReport = {
   id: string;
-  summary: string;
-  riskAssessment: string;
+  summary: string[];
+  riskAssessment: string[];
   missingClauses: string[];
-  recommendations: string;
+  recommendations: string[];
   riskScore: number;
+  aiConfidenceScore: number;
+  documentSeverity: 'Low' | 'Medium' | 'High' | 'Critical';
 };
 
 export type AuditorFeedback = {
