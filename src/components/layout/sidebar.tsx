@@ -15,6 +15,7 @@ import {
   ShieldCheck,
   UserCog,
   Bot,
+  Users,
 } from 'lucide-react';
 import { Logo } from '@/components/icons';
 import type { UserProfile } from '@/types';
@@ -31,6 +32,7 @@ export function AppSidebar({ user, isLoading }: AppSidebarProps) {
   const commonLinks = [
     { href: '/dashboard', icon: <LayoutDashboard />, label: 'Dashboard' },
     { href: '#', icon: <FileText />, label: 'Contracts' },
+    { href: '/dashboard/auditors', icon: <Users />, label: 'Find Auditors' },
   ];
 
   const roleLinks = {
