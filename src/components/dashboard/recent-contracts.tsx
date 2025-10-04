@@ -16,22 +16,35 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, ChevronDown, ChevronUp } from "lucide-react";
+import { ArrowRight, ChevronDown, ChevronUp, Trash2 } from "lucide-react";
 import { useCollection, useFirestore, useUser, useMemoFirebase } from "@/firebase";
 import type { Contract } from "@/types";
-import { collection, query, orderBy, limit } from "firebase/firestore";
+import { collection, query, orderBy, limit, doc, deleteDoc } from "firebase/firestore";
 import { format } from "date-fns";
 import { enIN } from "date-fns/locale";
 import { Skeleton } from "../ui/skeleton";
 import { ContractAnalysis } from "./contract-analysis";
 import Link from "next/link";
+import { useToast } from "@/hooks/use-toast";
 
 export function RecentContracts() {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
   const [expandedContractId, setExpandedContractId] = useState<string | null>(null);
+  const { toast } = useToast();
 
   const contractsQuery = useMemoFirebase(() => {
     if (!user) return null;
@@ -57,6 +70,21 @@ export function RecentContracts() {
   const handleToggleRow = (contractId: string) => {
     setExpandedContractId(prevId => prevId === contractId ? null : contractId);
   };
+  
+  const handleDeleteContract = async (contractId: string) => {
+    if (!user) {
+        toast({ variant: 'destructive', title: 'Authentication Error', description: 'You must be logged in to delete a contract.' });
+        return;
+    }
+    const contractRef = doc(firestore, 'users', user.uid, 'contracts', contractId);
+    try {
+        await deleteDoc(contractRef);
+        toast({ title: 'Contract Deleted', description: 'The contract has been successfully deleted.' });
+    } catch (error) {
+        toast({ variant: 'destructive', title: 'Deletion Failed', description: 'There was an error deleting the contract.' });
+        console.error("Error deleting contract:", error);
+    }
+  };
 
   const renderContent = () => {
     if (isUserLoading || isContractsLoading) {
@@ -68,6 +96,7 @@ export function RecentContracts() {
               <TableHead className="hidden md:table-cell">Uploaded</TableHead>
               <TableHead className="text-right">Status</TableHead>
               <TableHead className="w-[100px]"></TableHead>
+              <TableHead className="w-[50px]"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -77,6 +106,7 @@ export function RecentContracts() {
                 <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-20" /></TableCell>
                 <TableCell className="text-right"><Skeleton className="h-6 w-20 ml-auto" /></TableCell>
                 <TableCell className="text-right"><Skeleton className="h-8 w-[70px]" /></TableCell>
+                <TableCell></TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -98,30 +128,52 @@ export function RecentContracts() {
           <TableRow>
             <TableHead>Contract Title</TableHead>
             <TableHead className="hidden md:table-cell">Uploaded</TableHead>
-            <TableHead className="text-right">Status</TableHead>
-            <TableHead className="w-[100px]"></TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {contracts.map((contract) => (
             <React.Fragment key={contract.id}>
-              <TableRow onClick={() => handleToggleRow(contract.id)} className="cursor-pointer">
+              <TableRow>
                 <TableCell>
                   <div className="font-medium">{contract.title}</div>
                 </TableCell>
                 <TableCell className="hidden md:table-cell">
                   {contract.uploadDate ? format(contract.uploadDate.toDate(), 'P', { locale: enIN }) : 'N/A'}
                 </TableCell>
-                <TableCell className="text-right">
+                <TableCell>
                   <Badge variant={getStatusVariant(contract.status)} className="capitalize">
                     {contract.status}
                   </Badge>
                 </TableCell>
                 <TableCell className="text-right">
-                    <Button variant="outline" size="sm" >
+                    <Button variant="ghost" size="sm" onClick={() => handleToggleRow(contract.id)}>
                         {expandedContractId === contract.id ? <ChevronUp/> : <ChevronDown/>}
-                        <span className="ml-2">View</span>
+                        <span className="ml-2 hidden sm:inline">View</span>
                     </Button>
+                     <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
+                            <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This action cannot be undone. This will permanently delete the contract
+                            and all associated analysis data.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => handleDeleteContract(contract.id)} className="bg-destructive hover:bg-destructive/90">
+                            Delete
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                 </TableCell>
               </TableRow>
               {expandedContractId === contract.id && (

@@ -30,6 +30,7 @@ export type Contract = {
   fileName: string;
   description?: string;
   aiAnalysis?: AIAnalysisReport;
+  auditorFeedback?: AuditorFeedback[];
 };
 
 export type AIAnalysisReport = {
