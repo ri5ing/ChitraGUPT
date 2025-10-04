@@ -231,134 +231,41 @@
     ]
   },
   "firestore": {
-    "structure": [
-      {
-        "path": "/users/{userId}",
-        "definition": {
-          "entityName": "UserProfile",
-          "schema": {
-            "$ref": "#/backend/entities/UserProfile"
-          },
-          "description": "Stores user profile information. The userId is the Firebase Auth UID. This path enables path-based ownership for security rules.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The Firebase Auth UID of the user."
-            }
-          ]
-        }
+    "/users/{userId}": {
+      "schema": {
+        "$ref": "#/backend/entities/UserProfile"
       },
-      {
-        "path": "/auditors/{auditorId}",
-        "definition": {
-            "entityName": "AuditorProfile",
-            "schema": {
-                "$ref": "#/backend/entities/AuditorProfile"
-            },
-            "description": "Stores public-facing information for auditors. This collection can be read by any authenticated user, but only written to by the auditor themselves or an admin.",
-            "params": [
-                {
-                    "name": "auditorId",
-                    "description": "The Firebase Auth UID of the auditor."
-                }
-            ]
-        }
+      "description": "Stores user profile information. The userId is the Firebase Auth UID. This path enables path-based ownership for security rules."
+    },
+    "/auditors/{auditorId}": {
+      "schema": {
+        "$ref": "#/backend/entities/AuditorProfile"
       },
-      {
-        "path": "/users/{userId}/contracts/{contractId}",
-        "definition": {
-          "entityName": "Contract",
-          "schema": {
-            "$ref": "#/backend/entities/Contract"
-          },
-          "description": "Stores contracts uploaded by users. The userId parameter ensures that only the owner can access the contract (path-based ownership).",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The Firebase Auth UID of the user who owns the contract."
-            },
-            {
-              "name": "contractId",
-              "description": "Unique identifier for the contract."
-            }
-          ]
-        }
+      "description": "Stores public-facing information for auditors. This collection can be read by any authenticated user, but only written to by the auditor themselves or an admin."
+    },
+    "/users/{userId}/contracts/{contractId}": {
+      "schema": {
+        "$ref": "#/backend/entities/Contract"
       },
-      {
-        "path": "/users/{userId}/contracts/{contractId}/analysisReports/{analysisReportId}",
-        "definition": {
-          "entityName": "AIAnalysisReport",
-          "schema": {
-            "$ref": "#/backend/entities/AIAnalysisReport"
-          },
-          "description": "Stores AI analysis reports for each contract. The structure maintains a clear hierarchy and ensures path-based ownership.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The Firebase Auth UID of the user who owns the contract."
-            },
-            {
-              "name": "contractId",
-              "description": "Unique identifier for the contract."
-            },
-            {
-              "name": "analysisReportId",
-              "description": "Unique identifier for the AI analysis report."
-            }
-          ]
-        }
+      "description": "Stores contracts uploaded by users. The userId parameter ensures that only the owner can access the contract (path-based ownership)."
+    },
+    "/users/{userId}/contracts/{contractId}/analysisReports/{analysisReportId}": {
+      "schema": {
+        "$ref": "#/backend/entities/AIAnalysisReport"
       },
-      {
-        "path": "/users/{userId}/contracts/{contractId}/auditorFeedback/{auditorFeedbackId}",
-        "definition": {
-          "entityName": "AuditorFeedback",
-          "schema": {
-            "$ref": "#/backend/entities/AuditorFeedback"
-          },
-          "description": "Stores auditor feedback for each contract. The structure maintains a clear hierarchy and ensures that only authorized auditors can add feedback.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The Firebase Auth UID of the user who owns the contract."
-            },
-            {
-              "name": "contractId",
-              "description": "Unique identifier for the contract."
-            },
-            {
-              "name": "auditorFeedbackId",
-              "description": "Unique identifier for the auditor feedback."
-            }
-          ]
-        }
+      "description": "Stores AI analysis reports for each contract. The structure maintains a clear hierarchy and ensures path-based ownership."
+    },
+    "/users/{userId}/contracts/{contractId}/auditorFeedback/{auditorFeedbackId}": {
+      "schema": {
+        "$ref": "#/backend/entities/AuditorFeedback"
       },
-      {
-        "path": "/users/{userId}/contracts/{contractId}/annotations/{annotationId}",
-        "definition": {
-          "entityName": "Annotation",
-          "schema": {
-            "$ref": "#/backend/entities/Annotation"
-          },
-          "description": "Stores annotations made by auditors on specific contracts.  The structure ensures that annotations are directly linked to a contract and an auditor.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The Firebase Auth UID of the user who owns the contract."
-            },
-            {
-              "name": "contractId",
-              "description": "Unique identifier for the contract."
-            },
-            {
-              "name": "annotationId",
-              "description": "Unique identifier for the annotation."
-            }
-          ]
-        }
-      }
-    ],
-    "reasoning": "The Firestore structure is designed to provide a secure, scalable, and easily maintainable data model for the ChitraGupt application. It focuses on authorization independence and clear separation of concerns to simplify security rules and ensure data integrity. The structure adheres to the principle of path-based ownership for user-specific data, collaborative data, and segregation of data based on access control requirements. Specifically, it:\n\n*   Eliminates the need for `get()` calls in security rules by denormalizing authorization data, thus ensuring Authorization Independence.\n*   Segregates data based on access control needs, placing UserProfiles in their own collection and their associated Contracts into a subcollection. This allows us to use path-based rules for most operations.\n*   Enables secure `list` operations (QAPs) by ensuring that each collection contains documents with homogenous security requirements.\n\nThe data model includes collections for user profiles (`users`) and subcollections for user-owned contracts (`users/{userId}/contracts/{contractId}`). Analysis reports are stored as subcollections to maintain a clear hierarchy. Auditor feedback and annotations are stored as subcollections of contracts to maintain a logical data model. A public `auditors` collection is used to securely list auditor profiles without exposing sensitive user data."
+      "description": "Stores auditor feedback for each contract. The structure maintains a clear hierarchy and ensures that only authorized auditors can add feedback."
+    },
+    "/users/{userId}/contracts/{contractId}/annotations/{annotationId}": {
+      "schema": {
+        "$ref": "#/backend/entities/Annotation"
+      },
+      "description": "Stores annotations made by auditors on specific contracts.  The structure ensures that annotations are directly linked to a contract and an auditor."
+    }
   }
 }
-
-    
