@@ -46,19 +46,19 @@ export function AuditorRegistrationForm({ onSubmit, isLoading, onBack }: Auditor
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="mobile">Mobile Number</Label>
+              <Label htmlFor="mobile">Mobile Number (मोबाइल नंबर)</Label>
               <Input id="mobile" name="mobile" type="tel" placeholder="e.g., +1 555-555-5555" required />
             </div>
             <div className="space-y-2">
-                <Label htmlFor="firm">Firm / Independent</Label>
+                <Label htmlFor="firm">Firm / Independent (फर्म / स्वतंत्र)</Label>
                 <Input id="firm" name="firm" type="text" placeholder="e.g., Global Legal Associates" required />
             </div>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="specialization">Specialization</Label>
+            <Label htmlFor="specialization">Specialization (विशेषज्ञता)</Label>
             <Select name="specialization" required>
                 <SelectTrigger>
-                    <SelectValue placeholder="Select your area of expertise" />
+                    <SelectValue placeholder="Select your area of expertise (अपनी विशेषज्ञता का क्षेत्र चुनें)" />
                 </SelectTrigger>
                 <SelectContent>
                     <SelectItem value="Corporate Law">Corporate Law</SelectItem>
@@ -72,20 +72,20 @@ export function AuditorRegistrationForm({ onSubmit, isLoading, onBack }: Auditor
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-                <Label htmlFor="experience">Years of Experience</Label>
+                <Label htmlFor="experience">Years of Experience (अनुभव के वर्ष)</Label>
                 <Input id="experience" name="experience" type="number" placeholder="e.g., 10" required />
             </div>
             <div className="space-y-2">
-                <Label htmlFor="certifications">Certifications (Optional)</Label>
+                <Label htmlFor="certifications">Certifications (Optional) (प्रमाणपत्र (वैकल्पिक))</Label>
                 <Input id="certifications" name="certifications" type="text" placeholder="e.g., CIPP/E" />
             </div>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="motive">Motive for joining</Label>
+            <Label htmlFor="motive">Motive for joining (शामिल होने का उद्देश्य)</Label>
             <Textarea id="motive" name="motive" placeholder="e.g., To offer my expertise to a wider audience" required />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="kyc">Upload Aadhar Card (PDF/Image)</Label>
+            <Label htmlFor="kyc">Upload Aadhar Card (PDF/Image) (आधार कार्ड अपलोड करें (पीडीएफ/छवि))</Label>
             <Input id="kyc" name="kyc" type="file" accept="image/*,application/pdf" onChange={(e) => setFile(e.target.files?.[0] || null)} required/>
             <p className="text-xs text-muted-foreground">This will be scanned to verify your identity.</p>
           </div>

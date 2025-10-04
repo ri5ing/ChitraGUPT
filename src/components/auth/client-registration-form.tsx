@@ -45,19 +45,19 @@ export function ClientRegistrationForm({ onSubmit, isLoading, onBack }: ClientRe
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="mobile">Mobile Number</Label>
+            <Label htmlFor="mobile">Mobile Number (मोबाइल नंबर)</Label>
             <Input id="mobile" name="mobile" type="tel" placeholder="e.g., +1 555-555-5555" required />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="organization">Organization (Optional)</Label>
+            <Label htmlFor="organization">Organization (Optional) (संगठन (वैकल्पिक))</Label>
             <Input id="organization" name="organization" type="text" placeholder="e.g., Innovate Inc." />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="motive">Motive for using ChitraGupt</Label>
+            <Label htmlFor="motive">Motive for using ChitraGupt (चित्रगुप्त का उपयोग करने का उद्देश्य)</Label>
             <Textarea id="motive" name="motive" placeholder="e.g., To analyze vendor contracts" required />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="kyc">Upload Aadhar Card (PDF/Image)</Label>
+            <Label htmlFor="kyc">Upload Aadhar Card (PDF/Image) (आधार कार्ड अपलोड करें (पीडीएफ/छवि))</Label>
             <Input id="kyc" name="kyc" type="file" accept="image/*,application/pdf" onChange={(e) => setFile(e.target.files?.[0] || null)} />
             <p className="text-xs text-muted-foreground">This will be scanned to verify your identity.</p>
           </div>
