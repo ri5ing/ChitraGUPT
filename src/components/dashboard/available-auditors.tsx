@@ -122,7 +122,7 @@ export function AvailableAuditors({ contract }: AvailableAuditorsProps) {
             <CardContent className="space-y-3">
                  {auditor.specialization && (
                     <div className="flex flex-wrap gap-1">
-                    {(Array.isArray(auditor.specialization) ? auditor.specialization : [auditor.specialization]).map(spec => (
+                    {(Array.isArray(auditor.specialization) ? auditor.specialization : [auditor.specialization]).map((spec: string) => (
                         <Badge key={spec} variant="secondary" className="text-xs">{spec}</Badge>
                     ))}
                     </div>

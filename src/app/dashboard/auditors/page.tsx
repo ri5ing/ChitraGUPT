@@ -100,7 +100,7 @@ export default function AuditorsPage() {
                     <div>
                         <h4 className="text-sm font-semibold mb-2">Specializations</h4>
                         <div className="flex flex-wrap gap-2">
-                        {(Array.isArray(auditor.specialization) ? auditor.specialization : [auditor.specialization]).map(spec => (
+                        {(Array.isArray(auditor.specialization) ? auditor.specialization : [auditor.specialization]).map((spec: string) => (
                             <Badge key={spec} variant="secondary">{spec}</Badge>
                         ))}
                         </div>
