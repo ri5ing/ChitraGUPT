@@ -179,7 +179,7 @@ export function RecentContracts() {
               {expandedContractId === contract.id && (
                 <TableRow>
                   <TableCell colSpan={5}>
-                    <div className="p-4 bg-secondary/50 rounded-lg">
+                    <div className="p-4 bg-muted/50 rounded-lg">
                       <ContractAnalysis contract={contract} />
                     </div>
                   </TableCell>
