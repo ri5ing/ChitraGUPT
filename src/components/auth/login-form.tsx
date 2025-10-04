@@ -65,7 +65,6 @@ export function LoginForm() {
               type="email"
               placeholder="name@example.com"
               required
-              defaultValue="alice@example.com"
             />
           </div>
           <div className="space-y-2">
@@ -75,7 +74,7 @@ export function LoginForm() {
                 Forgot password?
               </Button>
             </div>
-            <Input id="password" type="password" required defaultValue="password123" />
+            <Input id="password" type="password" required />
           </div>
           {error && (
             <p className="text-sm font-medium text-destructive">{error}</p>
