@@ -24,10 +24,10 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userProfileRef);
 
   useEffect(() => {
-    if (!isUserLoading && !isProfileLoading && (!user || !userProfile)) {
+    if (!isUserLoading && !user) {
       router.push('/login');
     }
-  }, [isUserLoading, isProfileLoading, user, userProfile, router]);
+  }, [isUserLoading, user, router]);
 
 
   if (isUserLoading || isProfileLoading || !user || !userProfile) {
