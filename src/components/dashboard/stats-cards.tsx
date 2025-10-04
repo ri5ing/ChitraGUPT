@@ -2,21 +2,21 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CreditCard, FileClock, ShieldCheck, FileText } from 'lucide-react';
-import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { useUser, useFirestore, useCollection, useMemoFirebase, useDoc } from '@/firebase';
 import type { Contract, UserProfile } from '@/types';
-import { collection, query, where } from 'firebase/firestore';
+import { collection, query, where, doc } from 'firebase/firestore';
 import { Skeleton } from '../ui/skeleton';
 
 export function StatsCards() {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
 
-  const userProfileQuery = useMemoFirebase(() => {
+  const userProfileRef = useMemoFirebase(() => {
     if (!user) return null;
-    return query(collection(firestore, 'users'), where('id', '==', user.uid));
+    return doc(firestore, 'users', user.uid);
   }, [firestore, user]);
 
-  const { data: userProfileData, isLoading: isProfileLoading } = useCollection<UserProfile>(userProfileQuery);
+  const { data: currentUserProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userProfileRef);
 
   const contractsRef = useMemoFirebase(() => {
     if (!user) return null;
@@ -24,8 +24,6 @@ export function StatsCards() {
   }, [firestore, user]);
 
   const { data: contracts, isLoading: isContractsLoading } = useCollection<Contract>(contractsRef);
-
-  const currentUserProfile = userProfileData?.[0];
 
   if (isUserLoading || isProfileLoading || isContractsLoading || !currentUserProfile || !contracts) {
     return <StatsCardsSkeleton />;
