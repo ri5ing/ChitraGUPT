@@ -15,7 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Loader2, Upload } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth, useFirestore, useFirebase } from '@/firebase';
+import { useUser, useFirestore } from '@/firebase';
 import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 
 export function UploadContractDialog() {
@@ -25,11 +25,11 @@ export function UploadContractDialog() {
   const [title, setTitle] = useState('');
   const [clientName, setClientName] = useState('');
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user } = useUser();
   const firestore = useFirestore();
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (event.target.files) {
+    if (event.target.files && event.target.files.length > 0) {
       setFile(event.target.files[0]);
     }
   };
