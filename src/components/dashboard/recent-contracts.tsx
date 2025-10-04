@@ -104,8 +104,8 @@ export function RecentContracts() {
         </TableHeader>
         <TableBody>
           {contracts.map((contract) => (
-            <>
-              <TableRow key={contract.id} onClick={() => handleToggleRow(contract.id)} className="cursor-pointer">
+            <React.Fragment key={contract.id}>
+              <TableRow onClick={() => handleToggleRow(contract.id)} className="cursor-pointer">
                 <TableCell>
                   <div className="font-medium">{contract.title}</div>
                 </TableCell>
@@ -133,7 +133,7 @@ export function RecentContracts() {
                   </TableCell>
                 </TableRow>
               )}
-            </>
+            </React.Fragment>
           ))}
         </TableBody>
       </Table>
