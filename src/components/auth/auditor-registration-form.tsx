@@ -134,8 +134,8 @@ export function AuditorRegistrationForm({ onSubmit, isLoading, onBack }: Auditor
             <Textarea id="motive" name="motive" placeholder="e.g., To offer my expertise to a wider audience" required />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="kyc">Upload Aadhar Card (PDF/Image) (आधार कार्ड अपलोड करें (पीडीएफ/छवि))</Label>
-            <Input id="kyc" name="kyc" type="file" accept="image/*,application/pdf" onChange={handleFileChange} required/>
+            <Label htmlFor="kyc">Upload Aadhar Card (Optional) (आधार कार्ड अपलोड करें (वैकल्पिक))</Label>
+            <Input id="kyc" name="kyc" type="file" accept="image/*,application/pdf" onChange={handleFileChange} />
             <p className="text-xs text-muted-foreground">This will be scanned to verify your identity.</p>
           </div>
         </CardContent>
