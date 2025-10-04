@@ -17,6 +17,7 @@ export type Contract = {
   clientName: string;
   status: 'Pending' | 'In Review' | 'Completed' | 'Action Required';
   uploadDate: Timestamp;
+  fileName: string;
   riskScore?: number;
   analysisReportId?: string;
   aiAnalysis?: AIAnalysisReport;

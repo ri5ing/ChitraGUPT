@@ -16,7 +16,21 @@ import { Label } from '@/components/ui/label';
 import { Loader2, Upload } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useUser, useFirestore } from '@/firebase';
-import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { addDoc, collection, serverTimestamp, doc, runTransaction } from 'firebase/firestore';
+import { contractSummaryAndRiskAssessment } from '@/ai/flows/contract-summary-and-risk-assessment';
+import type { AIAnalysisReport, UserProfile } from '@/types';
+
+function fileToDataUri(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+            resolve(reader.result as string);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+}
+
 
 export function UploadContractDialog() {
   const [open, setOpen] = useState(false);
@@ -48,21 +62,63 @@ export function UploadContractDialog() {
     setIsLoading(true);
 
     try {
+        const userRef = doc(firestore, 'users', user.uid);
+        const currentUserProfile = (await runTransaction(firestore, async (transaction) => {
+            const userDoc = await transaction.get(userRef);
+            if (!userDoc.exists()) {
+                throw "User document doesn't exist!";
+            }
+            return userDoc.data() as UserProfile;
+        }));
+
+        if(currentUserProfile.creditBalance <= 0) {
+            toast({
+                variant: 'destructive',
+                title: 'Insufficient Credits',
+                description: 'You do not have enough credits to analyze a contract.',
+            });
+            setIsLoading(false);
+            return;
+        }
+
+      const contractDataUri = await fileToDataUri(file);
+      const analysisResult = await contractSummaryAndRiskAssessment({ contractDataUri });
+
       const contractsRef = collection(firestore, 'users', user.uid, 'contracts');
-      await addDoc(contractsRef, {
-        title,
-        clientName,
-        userId: user.uid,
-        status: 'Pending',
-        uploadDate: serverTimestamp(),
-        // In a real app, you would upload the file to Firebase Storage
-        // and store the URL here. For now, we'll just use the file name.
-        fileName: file.name,
+      
+      await runTransaction(firestore, async (transaction) => {
+        const userDoc = await transaction.get(userRef);
+        if (!userDoc.exists()) {
+          throw "User document doesn't exist!";
+        }
+        const currentBalance = userDoc.data().creditBalance;
+        if (currentBalance <= 0) {
+          throw 'Insufficient credits';
+        }
+
+        // Add new contract
+        transaction.set(doc(contractsRef), {
+            title,
+            clientName,
+            userId: user.uid,
+            status: 'Completed',
+            uploadDate: serverTimestamp(),
+            fileName: file.name,
+            aiAnalysis: {
+                ...analysisResult,
+                id: crypto.randomUUID(),
+            },
+            riskScore: analysisResult.riskScore,
+        });
+
+        // Decrement credit balance
+        transaction.update(userRef, { creditBalance: currentBalance - 1 });
       });
 
+
       toast({
-        title: 'Contract Uploaded',
-        description: `${title} has been successfully uploaded.`,
+        title: 'Contract Analyzed',
+        description: `${title} has been successfully uploaded and analyzed.`,
       });
 
       // Reset form and close dialog
@@ -71,11 +127,11 @@ export function UploadContractDialog() {
       setClientName('');
       setOpen(false);
     } catch (error: any) {
-      console.error('Error uploading contract: ', error);
+      console.error('Error uploading and analyzing contract: ', error);
       toast({
         variant: 'destructive',
-        title: 'Upload Failed',
-        description: error.message || 'There was a problem uploading your contract.',
+        title: 'Analysis Failed',
+        description: error.message || 'There was a problem with your contract.',
       });
     } finally {
       setIsLoading(false);
@@ -95,7 +151,7 @@ export function UploadContractDialog() {
           <DialogHeader>
             <DialogTitle>Upload New Contract</DialogTitle>
             <DialogDescription>
-              Select a document file and provide the necessary details below.
+              Select a document file to analyze. This will consume one credit.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
@@ -134,7 +190,7 @@ export function UploadContractDialog() {
                 type="file"
                 onChange={handleFileChange}
                 className="col-span-3"
-                accept=".pdf,.doc,.docx"
+                accept=".pdf,.doc,.docx,.txt"
                 required
               />
             </div>
