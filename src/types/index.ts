@@ -15,7 +15,7 @@ export type UserProfile = {
     aadharName?: string;
     aadharNumber?: string;
   };
-  specialization?: 'Corporate Law' | 'IP' | 'Employment' | 'Tax' | 'International Trade' | 'Other';
+  specialization?: string[];
   experience?: number;
   certifications?: string;
   firm?: string;

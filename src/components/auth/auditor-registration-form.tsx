@@ -14,10 +14,24 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Loader2 } from 'lucide-react';
 import { useState } from 'react';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { aadharKycFlow } from '@/ai/flows/aadhar-kyc-flow';
 import { useToast } from '@/hooks/use-toast';
 import { fileToDataUri } from '@/lib/utils';
+import { MultiSelect } from '../ui/multi-select';
+
+const specializationOptions = [
+    { value: 'Corporate Law', label: 'Corporate Law' },
+    { value: 'IP', label: 'Intellectual Property (IP)' },
+    { value: 'Employment', label: 'Employment Law' },
+    { value: 'Tax', label: 'Tax Law' },
+    { value: 'International Trade', label: 'International Trade' },
+    { value: 'Real Estate', label: 'Real Estate Law'},
+    { value: 'Family Law', label: 'Family Law'},
+    { value: 'Criminal Law', label: 'Criminal Law'},
+    { value: 'Arbitration', label: 'Arbitration'},
+    { value: 'Other', label: 'Other' },
+];
+
 
 type AuditorRegistrationFormProps = {
     onSubmit: (data: any) => void;
@@ -28,6 +42,7 @@ type AuditorRegistrationFormProps = {
 export function AuditorRegistrationForm({ onSubmit, isLoading, onBack }: AuditorRegistrationFormProps) {
   const [kycFile, setKycFile] = useState<File | null>(null);
   const [isScanningKyc, setIsScanningKyc] = useState(false);
+  const [specializations, setSpecializations] = useState<string[]>([]);
   const { toast } = useToast();
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -71,7 +86,7 @@ export function AuditorRegistrationForm({ onSubmit, isLoading, onBack }: Auditor
 
     const formData = new FormData(event.currentTarget);
     const data = Object.fromEntries(formData.entries());
-    onSubmit({ ...data, ...kycData });
+    onSubmit({ ...data, specialization: specializations, ...kycData });
   };
 
   const totalLoading = isLoading || isScanningKyc;
@@ -96,19 +111,13 @@ export function AuditorRegistrationForm({ onSubmit, isLoading, onBack }: Auditor
           </div>
           <div className="space-y-2">
             <Label htmlFor="specialization">Specialization (विशेषज्ञता)</Label>
-            <Select name="specialization" required>
-                <SelectTrigger>
-                    <SelectValue placeholder="Select your area of expertise (अपनी विशेषज्ञता का क्षेत्र चुनें)" />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectItem value="Corporate Law">Corporate Law</SelectItem>
-                    <SelectItem value="IP">Intellectual Property (IP)</SelectItem>
-                    <SelectItem value="Employment">Employment Law</SelectItem>
-                    <SelectItem value="Tax">Tax Law</SelectItem>
-                    <SelectItem value="International Trade">International Trade</SelectItem>
-                    <SelectItem value="Other">Other</SelectItem>
-                </SelectContent>
-            </Select>
+            <MultiSelect
+                options={specializationOptions}
+                selected={specializations}
+                onChange={setSpecializations}
+                placeholder="Select your areas of expertise..."
+                className="w-full"
+            />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
