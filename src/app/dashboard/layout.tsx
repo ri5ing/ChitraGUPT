@@ -1,5 +1,5 @@
 'use client';
-import type { ReactNode } from 'react';
+import { ReactNode, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   SidebarProvider,
@@ -23,12 +23,14 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
   const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userProfileRef);
 
-  if (isUserLoading || isProfileLoading) {
-    return <DashboardSkeleton />;
-  }
+  useEffect(() => {
+    if (!isUserLoading && !isProfileLoading && (!user || !userProfile)) {
+      router.push('/login');
+    }
+  }, [isUserLoading, isProfileLoading, user, userProfile, router]);
 
-  if (!user || !userProfile) {
-    router.push('/login');
+
+  if (isUserLoading || isProfileLoading || !user || !userProfile) {
     return <DashboardSkeleton />;
   }
 
