@@ -34,7 +34,7 @@ export default function ReviewQueuePage() {
   const [expandedContractId, setExpandedContractId] = useState<string | null>(null);
 
   const reviewQueueQuery = useMemoFirebase(() => {
-    if (!user || !firestore) return null; // Ensure firestore is available
+    if (!user || !firestore) return null; // Ensure firestore and user are available
     return query(
       collectionGroup(firestore, 'contracts'),
       where('auditorId', '==', user.uid),
