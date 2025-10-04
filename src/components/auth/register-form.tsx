@@ -15,22 +15,54 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import { useAuth, useFirestore } from '@/firebase';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore';
+import { useToast } from '@/hooks/use-toast';
 
 export function RegisterForm() {
   const router = useRouter();
+  const auth = useAuth();
+  const firestore = useFirestore();
+  const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setIsLoading(true);
     setError(null);
 
-    // Mock registration
-    setTimeout(() => {
-      // On successful "registration", redirect to the dashboard
+    const name = (event.target as any).elements.name.value;
+    const email = (event.target as any).elements.email.value;
+    const password = (event.target as any).elements.password.value;
+
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+
+      // Create user profile in Firestore
+      const userRef = doc(firestore, 'users', user.uid);
+      await setDoc(userRef, {
+        id: user.uid,
+        name: name,
+        email: user.email,
+        role: 'client',
+        subscriptionPlan: 'Free',
+        creditBalance: 10,
+        avatarUrl: `https://picsum.photos/seed/${user.uid}/100/100`
+      });
+
       router.push('/dashboard');
-    }, 1000);
+    } catch (e: any) {
+      setError(e.message);
+      toast({
+        variant: 'destructive',
+        title: 'Registration Failed',
+        description: e.message,
+      });
+      setIsLoading(false);
+    }
   };
 
   return (

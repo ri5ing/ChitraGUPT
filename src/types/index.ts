@@ -1,34 +1,43 @@
-export type User = {
+import { Timestamp } from "firebase/firestore";
+
+export type UserProfile = {
   id: string;
   name: string;
   email: string;
   avatarUrl: string;
   role: 'client' | 'auditor' | 'admin';
-  credits: number;
-  subscription: 'Free' | 'Pro' | 'Enterprise';
+  creditBalance: number;
+  subscriptionPlan: 'Free' | 'Pro' | 'Enterprise';
 };
 
 export type Contract = {
   id: string;
   title: string;
+  userId: string;
   clientName: string;
   status: 'Pending' | 'In Review' | 'Completed' | 'Action Required';
-  uploadDate: string;
-  riskScore: number;
-  aiAnalysis?: {
-    summary: string;
-    riskAssessment: string;
-    missingClauses: string[];
-    recommendations: string;
-  };
+  uploadDate: Timestamp;
+  riskScore?: number;
+  analysisReportId?: string;
+  aiAnalysis?: AIAnalysisReport;
   auditorFeedback?: AuditorFeedback[];
+};
+
+export type AIAnalysisReport = {
+  id: string;
+  summary: string;
+  riskAssessment: string;
+  missingClauses: string[];
+  recommendations: string;
+  riskScore: number;
 };
 
 export type AuditorFeedback = {
   id: string;
   contractId: string;
+  auditorId: string;
   auditorName: string;
   auditorAvatarUrl: string;
   feedback: string;
-  timestamp: string;
+  timestamp: Timestamp;
 };

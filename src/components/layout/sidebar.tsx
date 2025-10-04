@@ -16,11 +16,11 @@ import {
   UserCog,
 } from 'lucide-react';
 import { Logo } from '@/components/icons';
-import type { User } from '@/types';
+import type { UserProfile } from '@/types';
 import { Badge } from '../ui/badge';
 
 type AppSidebarProps = {
-  user: User;
+  user: UserProfile;
 };
 
 export function AppSidebar({ user }: AppSidebarProps) {
@@ -69,10 +69,10 @@ export function AppSidebar({ user }: AppSidebarProps) {
          <div className="group-data-[collapsible=icon]:hidden p-2 space-y-2 bg-card rounded-lg">
             <h4 className="font-semibold text-sm">Credits</h4>
             <div className="flex justify-between items-center">
-                <span className="text-2xl font-bold">{user.credits}</span>
-                <Badge variant={user.credits > 0 ? "secondary" : "destructive"}>{user.credits > 0 ? "Active" : "Empty"}</Badge>
+                <span className="text-2xl font-bold">{user.creditBalance}</span>
+                <Badge variant={user.creditBalance > 0 ? "secondary" : "destructive"}>{user.creditBalance > 0 ? "Active" : "Empty"}</Badge>
             </div>
-            <p className="text-xs text-muted-foreground">You have {user.credits} credits remaining.</p>
+            <p className="text-xs text-muted-foreground">You have {user.creditBalance} credits remaining.</p>
         </div>
         <SidebarMenu>
           <SidebarMenuItem>

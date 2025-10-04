@@ -15,28 +15,37 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import { useAuth } from '@/firebase';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { useToast } from '@/hooks/use-toast';
 
 export function LoginForm() {
   const router = useRouter();
+  const auth = useAuth();
+  const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setIsLoading(true);
     setError(null);
 
-    // Mock authentication
-    setTimeout(() => {
-      const email = (event.target as any).elements.email.value;
-      if (email.includes('fail')) {
-        setError('Invalid email or password. Please try again.');
-        setIsLoading(false);
-      } else {
-        // On successful "login", redirect to the dashboard
-        router.push('/dashboard');
-      }
-    }, 1000);
+    const email = (event.target as any).elements.email.value;
+    const password = (event.target as any).elements.password.value;
+
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      router.push('/dashboard');
+    } catch (e: any) {
+      setError(e.message);
+      toast({
+        variant: 'destructive',
+        title: 'Sign In Failed',
+        description: e.message,
+      });
+      setIsLoading(false);
+    }
   };
 
   return (

@@ -18,18 +18,29 @@ import {
   Settings,
   User as UserIcon,
 } from 'lucide-react';
-import type { User } from '@/types';
+import type { UserProfile } from '@/types';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useAuth } from '@/firebase';
+import { signOut } from 'firebase/auth';
+import { useRouter } from 'next/navigation';
 
 type AppHeaderProps = {
-  user: User;
+  user: UserProfile;
 };
 
 export function AppHeader({ user }: AppHeaderProps) {
   const pathname = usePathname();
+  const router = useRouter();
+  const auth = useAuth();
+  
   const pageTitle = pathname.split('/').pop()?.replace(/-/g, ' ') || 'Dashboard';
   const capitalizedTitle = pageTitle.charAt(0).toUpperCase() + pageTitle.slice(1);
+
+  const handleLogout = async () => {
+    await signOut(auth);
+    router.push('/login');
+  }
 
   return (
     <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm md:px-6">
@@ -81,11 +92,9 @@ export function AppHeader({ user }: AppHeaderProps) {
             Settings
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem asChild>
-            <Link href="/login">
+          <DropdownMenuItem onClick={handleLogout}>
               <LogOut />
               Log out
-            </Link>
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
