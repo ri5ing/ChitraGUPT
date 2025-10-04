@@ -1,0 +1,171 @@
+/**
+ * @fileOverview
+ * This ruleset enforces a strict user-ownership model for all data within the ChitraGupt application.
+ * All data is nested under `/users/{userId}`, ensuring that only the authenticated user with the matching UID can access their own data.
+ *
+ * Data Structure:
+ * - `/users/{userId}`: Stores user profile information, accessible only to the user.
+ * - `/users/{userId}/contracts/{contractId}`: Stores contracts uploaded by the user.
+ * - `/users/{userId}/contracts/{contractId}/analysisReports/{analysisReportId}`: Stores AI analysis reports for contracts.
+ * - `/users/{userId}/contracts/{contractId}/auditorFeedback/{auditorFeedbackId}`: Stores auditor feedback for contracts.
+ * - `/users/{userId}/contracts/{contractId}/annotations/{annotationId}`: Stores annotations made by auditors on specific contracts.
+ *
+ * Key Security Decisions:
+ * - User listing is disallowed to protect user privacy.
+ * - All write operations are restricted to the owner of the data, based on the `userId` in the path.
+ * - Data consistency is enforced by validating that the `userId` in the path matches the `id` field in the UserProfile document on creation.
+ * - Update operations enforce immutability for the `id` field in UserProfile to prevent ownership changes.
+ *
+ * Denormalization for Authorization:
+ *  The `userId` is included in the path for contracts, reports, feedback, and annotations. This avoids the need for `get()` calls to determine ownership, ensuring Authorization Independence.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /**
+     * @description Controls access to user profile information.
+     * @path /users/{userId}
+     * @allow (create) User with UID 'user123' can create their profile at /users/user123.
+     * @deny (create) User with UID 'user123' cannot create profile at /users/user456.
+     * @allow (get) User with UID 'user123' can get their profile at /users/user123.
+     * @deny (get) User with UID 'user123' cannot get profile at /users/user456.
+     * @allow (update) User with UID 'user123' can update their profile at /users/user123.
+     * @deny (update) User with UID 'user123' cannot update profile at /users/user456.
+     * @allow (delete) User with UID 'user123' can delete their profile at /users/user123.
+     * @deny (delete) User with UID 'user123' cannot delete profile at /users/user456.
+     * @principle Enforces document ownership for all operations.
+     */
+    match /users/{userId} {
+      function isOwner(userId) {
+        return request.auth != null && request.auth.uid == userId;
+      }
+
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
+      }
+
+      allow get: if isOwner(userId);
+      allow list: if false; // User listing is not permitted.
+      allow create: if isOwner(userId) && request.resource.data.id == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Controls access to contracts uploaded by users.
+     * @path /users/{userId}/contracts/{contractId}
+     * @allow (create) User with UID 'user123' can create contract at /users/user123/contracts/contract001.
+     * @deny (create) User with UID 'user123' cannot create contract at /users/user456/contracts/contract001.
+     * @allow (get) User with UID 'user123' can get their contract at /users/user123/contracts/contract001.
+     * @deny (get) User with UID 'user123' cannot get contract at /users/user456/contracts/contract001.
+     * @allow (update) User with UID 'user123' can update their contract at /users/user123/contracts/contract001.
+     * @deny (update) User with UID 'user123' cannot update contract at /users/user456/contracts/contract001.
+     * @allow (delete) User with UID 'user123' can delete their contract at /users/user123/contracts/contract001.
+     * @deny (delete) User with UID 'user123' cannot delete contract at /users/user456/contracts/contract001.
+     * @principle Enforces document ownership for all operations.
+     */
+    match /users/{userId}/contracts/{contractId} {
+      function isOwner(userId) {
+        return request.auth != null && request.auth.uid == userId;
+      }
+
+       function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
+      }
+
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.userId == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Controls access to AI analysis reports for each contract.
+     * @path /users/{userId}/contracts/{contractId}/analysisReports/{analysisReportId}
+     * @allow (create) User with UID 'user123' can create report at /users/user123/contracts/contract001/analysisReports/report001.
+     * @deny (create) User with UID 'user123' cannot create report at /users/user456/contracts/contract001/analysisReports/report001.
+     * @allow (get) User with UID 'user123' can get their report at /users/user123/contracts/contract001/analysisReports/report001.
+     * @deny (get) User with UID 'user123' cannot get report at /users/user456/contracts/contract001/analysisReports/report001.
+     * @allow (update) User with UID 'user123' can update their report at /users/user123/contracts/contract001/analysisReports/report001.
+     * @deny (update) User with UID 'user123' cannot update report at /users/user456/contracts/contract001/analysisReports/report001.
+     * @allow (delete) User with UID 'user123' can delete their report at /users/user123/contracts/contract001/analysisReports/report001.
+     * @deny (delete) User with UID 'user123' cannot delete report at /users/user456/contracts/contract001/analysisReports/report001.
+     * @principle Enforces document ownership for all operations.
+     */
+    match /users/{userId}/contracts/{contractId}/analysisReports/{analysisReportId} {
+      function isOwner(userId) {
+        return request.auth != null && request.auth.uid == userId;
+      }
+
+       function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
+      }
+
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId);
+      allow update: if isExistingOwner(userId);
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Controls access to auditor feedback for each contract.
+     * @path /users/{userId}/contracts/{contractId}/auditorFeedback/{auditorFeedbackId}
+     * @allow (create) User with UID 'user123' can create feedback at /users/user123/contracts/contract001/auditorFeedback/feedback001.
+     * @deny (create) User with UID 'user123' cannot create feedback at /users/user456/contracts/contract001/auditorFeedback/feedback001.
+     * @allow (get) User with UID 'user123' can get their feedback at /users/user123/contracts/contract001/auditorFeedback/feedback001.
+     * @deny (get) User with UID 'user123' cannot get feedback at /users/user456/contracts/contract001/auditorFeedback/feedback001.
+     * @allow (update) User with UID 'user123' can update their feedback at /users/user123/contracts/contract001/auditorFeedback/feedback001.
+     * @deny (update) User with UID 'user123' cannot update feedback at /users/user456/contracts/contract001/auditorFeedback/feedback001.
+     * @allow (delete) User with UID 'user123' can delete their feedback at /users/user123/contracts/contract001/auditorFeedback/feedback001.
+     * @deny (delete) User with UID 'user123' cannot delete feedback at /users/user456/contracts/contract001/auditorFeedback/feedback001.
+     * @principle Enforces document ownership for all operations.
+     */
+    match /users/{userId}/contracts/{contractId}/auditorFeedback/{auditorFeedbackId} {
+      function isOwner(userId) {
+        return request.auth != null && request.auth.uid == userId;
+      }
+
+       function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
+      }
+
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId);
+      allow update: if isExistingOwner(userId);
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Controls access to annotations made by auditors on specific contracts.
+     * @path /users/{userId}/contracts/{contractId}/annotations/{annotationId}
+     * @allow (create) User with UID 'user123' can create annotation at /users/user123/contracts/contract001/annotations/annotation001.
+     * @deny (create) User with UID 'user123' cannot create annotation at /users/user456/contracts/contract001/annotations/annotation001.
+     * @allow (get) User with UID 'user123' can get their annotation at /users/user123/contracts/contract001/annotations/annotation001.
+     * @deny (get) User with UID 'user123' cannot get annotation at /users/user456/contracts/contract001/annotations/annotation001.
+     * @allow (update) User with UID 'user123' can update their annotation at /users/user123/contracts/contract001/annotations/annotation001.
+     * @deny (update) User with UID 'user123' cannot update annotation at /users/user456/contracts/contract001/annotations/annotation001.
+     * @allow (delete) User with UID 'user123' can delete their annotation at /users/user123/contracts/contract001/annotations/annotation001.
+     * @deny (delete) User with UID 'user123' cannot delete annotation at /users/user456/contracts/contract001/annotations/annotation001.
+     * @principle Enforces document ownership for all operations.
+     */
+    match /users/{userId}/contracts/{contractId}/annotations/{annotationId} {
+      function isOwner(userId) {
+        return request.auth != null && request.auth.uid == userId;
+      }
+
+       function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
+      }
+
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId);
+      allow update: if isExistingOwner(userId);
+      allow delete: if isExistingOwner(userId);
+    }
+  }
+}
