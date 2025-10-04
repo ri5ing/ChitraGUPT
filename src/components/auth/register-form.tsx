@@ -110,15 +110,15 @@ export function RegisterForm() {
                   <Input id="name" type="text" placeholder="John Doe" required />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
+                  <Label htmlFor="email">Email (ईमेल)</Label>
                   <Input id="email" type="email" placeholder="name@example.com" required />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
+                  <Label htmlFor="password">Password (पासवर्ड)</Label>
                   <Input id="password" type="password" required />
                 </div>
                 <div className="space-y-3">
-                  <Label>I am a...</Label>
+                  <Label>I am a... (मैं एक...)</Label>
                   <RadioGroup onValueChange={(value) => setRole(value as 'client' | 'auditor')} value={role ?? undefined} className="grid grid-cols-2 gap-4">
                     <div>
                       <RadioGroupItem value="client" id="client" className="peer sr-only" />
