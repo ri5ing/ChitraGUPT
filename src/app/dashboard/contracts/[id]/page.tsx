@@ -33,6 +33,7 @@ export default function ContractDetailPage() {
 
   if (!contract) {
     notFound();
+    return null; // notFound() doesn't return, but this satisfies TypeScript
   }
 
   return (
