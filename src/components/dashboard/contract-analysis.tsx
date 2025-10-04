@@ -9,7 +9,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Accordion,
   AccordionContent,
@@ -18,7 +17,6 @@ import {
 } from '@/components/ui/accordion';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -33,11 +31,11 @@ import {
   BrainCircuit,
   AlertTriangle,
 } from 'lucide-react';
-import { Label } from '@/components/ui/label';
 import { format } from 'date-fns';
 import { enIN } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
+import { ChatDialog } from '../chitragupt-guide/chat-dialog';
 
 type ContractAnalysisProps = {
   contract: Contract;
@@ -172,9 +170,16 @@ export function ContractAnalysis({ contract }: ContractAnalysisProps) {
                 )}
             </CardContent>
              <CardFooter className="flex flex-col md:flex-row items-center gap-2 border-t pt-6">
-                <Button className='w-full md:w-auto' onClick={() => handleFeatureClick('Chat with ChitraGUPT')}>
-                    <MessageSquareQuote className="mr-2 h-4 w-4" /> Chat with ChitraGUPT
-                </Button>
+                <ChatDialog
+                    contractContext={{
+                        summary: summaryPoints,
+                        riskAssessment: riskAssessmentPoints
+                    }}
+                >
+                    <Button className='w-full md:w-auto'>
+                        <MessageSquareQuote className="mr-2 h-4 w-4" /> Chat with ChitraGUPT
+                    </Button>
+                </ChatDialog>
                 <p className="text-xs text-muted-foreground">(1 credit for 3 chats)</p>
                 <div className="flex-grow"></div>
                  <Button variant="outline" className='w-full md:w-auto' onClick={() => handleFeatureClick('Auditor Recommendation')}>

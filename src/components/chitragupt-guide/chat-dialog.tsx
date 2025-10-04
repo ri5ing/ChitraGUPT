@@ -16,7 +16,7 @@ import { Loader2, Send } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAtom } from 'jotai';
 import { languageAtom } from '@/lib/language-atom';
-import { chitraguptGuide } from '@/ai/flows/chitragupt-guide-flow';
+import { chitraguptGuide, ChitraguptGuideInput } from '@/ai/flows/chitragupt-guide-flow';
 import { ScrollArea } from '../ui/scroll-area';
 import { Avatar, AvatarFallback } from '../ui/avatar';
 import { cn } from '@/lib/utils';
@@ -28,7 +28,12 @@ type Message = {
   sender: 'user' | 'ai';
 };
 
-export function ChatDialog({ children }: { children: ReactNode }) {
+type ChatDialogProps = {
+  children: ReactNode;
+  contractContext?: ChitraguptGuideInput['contractContext'];
+};
+
+export function ChatDialog({ children, contractContext }: ChatDialogProps) {
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -56,7 +61,11 @@ export function ChatDialog({ children }: { children: ReactNode }) {
     setIsLoading(true);
 
     try {
-      const result = await chitraguptGuide({ question: input, language });
+      const result = await chitraguptGuide({ 
+        question: input, 
+        language,
+        contractContext,
+      });
       const aiMessage: Message = { id: crypto.randomUUID(), text: result.answer, sender: 'ai' };
       setMessages((prev) => [...prev, aiMessage]);
     } catch (error: any) {
@@ -72,10 +81,21 @@ export function ChatDialog({ children }: { children: ReactNode }) {
     }
   };
   
-  const welcomeMessage = {
-    'English': 'Hello! I am ChitraGUPT. How can I help you today?',
-    'Hindi': 'नमस्ते! मैं चित्रगुप्त हूँ। आज मैं आपकी कैसे मदद कर सकता हूँ?',
-  }[language];
+  const getWelcomeMessage = () => {
+    let baseWelcome = {
+      'English': 'Hello! I am ChitraGUPT. How can I help you today?',
+      'Hindi': 'नमस्ते! मैं चित्रगुप्त हूँ। आज मैं आपकी कैसे मदद कर सकता हूँ?',
+    }[language];
+
+    if (contractContext) {
+      const docWelcome = {
+        'English': ' I have the context for the current document. Feel free to ask me anything about it.',
+        'Hindi': ' मेरे पास वर्तमान दस्तावेज़ का संदर्भ है। बेझिझक मुझसे इसके बारे में कुछ भी पूछें।',
+      }[language];
+      baseWelcome += docWelcome;
+    }
+    return baseWelcome;
+  };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -84,7 +104,7 @@ export function ChatDialog({ children }: { children: ReactNode }) {
         <DialogHeader>
           <DialogTitle>Chat with ChitraGUPT</DialogTitle>
           <DialogDescription>
-            Your AI guide to the ChitraGupt application.
+            {contractContext ? "Your AI guide for this document." : "Your AI guide to the ChitraGupt application."}
           </DialogDescription>
         </DialogHeader>
         <ScrollArea className="flex-1 pr-4 -mr-4" ref={scrollAreaRef}>
@@ -94,7 +114,7 @@ export function ChatDialog({ children }: { children: ReactNode }) {
                     <AvatarFallback><Bot size={18} /></AvatarFallback>
                 </Avatar>
                 <div className="p-3 rounded-lg bg-muted text-sm max-w-[85%]">
-                    {welcomeMessage}
+                    {getWelcomeMessage()}
                 </div>
             </div>
             {messages.map((message) => (

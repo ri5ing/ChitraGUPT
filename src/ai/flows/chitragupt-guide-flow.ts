@@ -13,6 +13,10 @@ import {z} from 'genkit';
 const ChitraguptGuideInputSchema = z.object({
   question: z.string().describe('The user\'s question about the ChitraGupt application.'),
   language: z.string().describe('The language for the response (e.g., "English" or "Hindi").'),
+  contractContext: z.object({
+    summary: z.array(z.string()),
+    riskAssessment: z.array(z.string()),
+  }).optional().describe('Optional context about a specific contract.'),
 });
 export type ChitraguptGuideInput = z.infer<typeof ChitraguptGuideInputSchema>;
 
@@ -42,10 +46,23 @@ Your knowledge base includes:
 - **Credits**: Used for AI analysis and other features. Users can purchase more credits.
 - **Auditor Collaboration**: Clients can request review from an auditor. Chatting with an auditor costs 1 credit per message.
 
+{{#if contractContext}}
+You have been provided with the context of a specific contract. Use this information to answer the user's question about this document.
+Contract Summary:
+{{#each contractContext.summary}}
+- {{this}}
+{{/each}}
+
+Contract Risk Assessment:
+{{#each contractContext.riskAssessment}}
+- {{this}}
+{{/each}}
+{{/if}}
+
 RULES:
 - Answer the user's question clearly and concisely.
 - Respond in the language specified: {{{language}}}.
-- If the question is outside the scope of the ChitraGupt application, politely state that you can only help with app-related queries.
+- If the question is outside the scope of the ChitraGupt application or the provided contract context, politely state that you can only help with app-related or document-specific queries.
 - Keep your answers brief and to the point. Use bullet points if it helps with clarity.
 
 User Question: "{{{question}}}"
