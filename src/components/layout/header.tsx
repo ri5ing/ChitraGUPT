@@ -15,15 +15,18 @@ import {
   ChevronDown,
   CreditCard,
   LogOut,
+  PlusCircle,
   Settings,
   User as UserIcon,
 } from 'lucide-react';
 import type { UserProfile } from '@/types';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useAuth } from '@/firebase';
+import { useAuth, useFirestore } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
+import { doc, runTransaction } from 'firebase/firestore';
+import { useToast } from '@/hooks/use-toast';
 
 type AppHeaderProps = {
   user: UserProfile;
@@ -33,6 +36,8 @@ export function AppHeader({ user }: AppHeaderProps) {
   const pathname = usePathname();
   const router = useRouter();
   const auth = useAuth();
+  const firestore = useFirestore();
+  const { toast } = useToast();
   
   const pageTitle = pathname.split('/').pop()?.replace(/-/g, ' ') || 'Dashboard';
   const capitalizedTitle = pageTitle.charAt(0).toUpperCase() + pageTitle.slice(1);
@@ -41,6 +46,31 @@ export function AppHeader({ user }: AppHeaderProps) {
     await signOut(auth);
     router.push('/login');
   }
+
+  const handleAddCredits = async () => {
+    if (!user) return;
+    const userRef = doc(firestore, 'users', user.id);
+    try {
+      await runTransaction(firestore, async (transaction) => {
+        const userDoc = await transaction.get(userRef);
+        if (!userDoc.exists()) {
+          throw new Error("User not found");
+        }
+        const newBalance = (userDoc.data().creditBalance || 0) + 10;
+        transaction.update(userRef, { creditBalance: newBalance });
+      });
+      toast({
+        title: 'Credits Added',
+        description: '10 credits have been added to your account.',
+      });
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Error Adding Credits',
+        description: error.message,
+      });
+    }
+  };
 
   return (
     <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm md:px-6">
@@ -82,6 +112,10 @@ export function AppHeader({ user }: AppHeaderProps) {
           <DropdownMenuItem>
             <UserIcon />
             Profile
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={handleAddCredits}>
+            <PlusCircle />
+            Add Credits
           </DropdownMenuItem>
           <DropdownMenuItem>
             <CreditCard />
