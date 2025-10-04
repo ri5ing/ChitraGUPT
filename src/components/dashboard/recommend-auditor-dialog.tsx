@@ -13,8 +13,8 @@ import {
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, where, doc, updateDoc, arrayUnion } from 'firebase/firestore';
-import type { UserProfile } from '@/types';
+import { collection, query, doc, updateDoc } from 'firebase/firestore';
+import type { AuditorProfile } from '@/types';
 import { Loader2, Send } from 'lucide-react';
 import { ScrollArea } from '../ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
@@ -29,16 +29,16 @@ type RecommendAuditorDialogProps = {
 export function RecommendAuditorDialog({ children, contractId }: RecommendAuditorDialogProps) {
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedAuditor, setSelectedAuditor] = useState<UserProfile | null>(null);
+  const [selectedAuditor, setSelectedAuditor] = useState<AuditorProfile | null>(null);
   const { toast } = useToast();
   const { user } = useUser();
   const firestore = useFirestore();
 
   const auditorsQuery = useMemoFirebase(() => {
-    return query(collection(firestore, 'users'), where('role', '==', 'auditor'));
+    return query(collection(firestore, 'auditors'));
   }, [firestore]);
 
-  const { data: auditors, isLoading: isLoadingAuditors } = useCollection<UserProfile>(auditorsQuery);
+  const { data: auditors, isLoading: isLoadingAuditors } = useCollection<AuditorProfile>(auditorsQuery);
 
   const handleSendRequest = async () => {
     if (!user || !selectedAuditor) {
@@ -52,13 +52,8 @@ export function RecommendAuditorDialog({ children, contractId }: RecommendAudito
       await updateDoc(contractRef, {
         status: 'In Review',
         // In a real app, you would add this to a subcollection or a dedicated 'review_requests' collection.
-        // For simplicity, we'll just update the status here.
-        // A more robust solution might look like:
-        // 'reviewRequests': arrayUnion({
-        //   auditorId: selectedAuditor.id,
-        //   status: 'pending',
-        //   requestDate: new Date(),
-        // })
+        // For simplicity, we'll just update the status and assigned auditor ID.
+        auditorId: selectedAuditor.id
       });
 
       toast({
@@ -105,14 +100,14 @@ export function RecommendAuditorDialog({ children, contractId }: RecommendAudito
                     >
                         <Avatar>
                             <AvatarImage src={auditor.avatarUrl} alt={auditor.displayName} />
-                            <AvatarFallback>{auditor.displayName?.charAt(0) ?? auditor.email.charAt(0)}</AvatarFallback>
+                            <AvatarFallback>{auditor.displayName?.charAt(0)}</AvatarFallback>
                         </Avatar>
                         <div className="flex-1">
                             <div className="font-semibold">{auditor.displayName}</div>
                             <div className="text-sm text-muted-foreground">{auditor.firm}</div>
                              {auditor.specialization && (
                                 <div className="flex flex-wrap gap-1 mt-2">
-                                    {auditor.specialization.map(spec => (
+                                    {(Array.isArray(auditor.specialization) ? auditor.specialization : [auditor.specialization]).map(spec => (
                                         <Badge key={spec} variant="secondary">{spec}</Badge>
                                     ))}
                                 </div>
@@ -136,3 +131,5 @@ export function RecommendAuditorDialog({ children, contractId }: RecommendAudito
     </Dialog>
   );
 }
+
+    

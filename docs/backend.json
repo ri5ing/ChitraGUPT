@@ -36,6 +36,42 @@
         "creditBalance"
       ]
     },
+    "AuditorProfile": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "AuditorProfile",
+      "type": "object",
+      "description": "Represents the public-facing profile of an auditor.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the auditor (matches their UID)."
+        },
+        "displayName": {
+          "type": "string",
+          "description": "The auditor's display name."
+        },
+        "avatarUrl": {
+          "type": "string",
+          "description": "URL for the auditor's avatar image."
+        },
+        "firm": {
+          "type": "string",
+          "description": "The auditor's firm or if they are independent."
+        },
+        "specialization": {
+          "type": "array",
+          "description": "The auditor's areas of legal specialization.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "experience": {
+          "type": "number",
+          "description": "The auditor's years of experience."
+        }
+      },
+      "required": ["id", "displayName", "avatarUrl"]
+    },
     "Contract": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Contract",
@@ -213,6 +249,22 @@
         }
       },
       {
+        "path": "/auditors/{auditorId}",
+        "definition": {
+            "entityName": "AuditorProfile",
+            "schema": {
+                "$ref": "#/backend/entities/AuditorProfile"
+            },
+            "description": "Stores public-facing information for auditors. This collection can be read by any authenticated user, but only written to by the auditor themselves or an admin.",
+            "params": [
+                {
+                    "name": "auditorId",
+                    "description": "The Firebase Auth UID of the auditor."
+                }
+            ]
+        }
+      },
+      {
         "path": "/users/{userId}/contracts/{contractId}",
         "definition": {
           "entityName": "Contract",
@@ -305,6 +357,8 @@
         }
       }
     ],
-    "reasoning": "The Firestore structure is designed to provide a secure, scalable, and easily maintainable data model for the ChitraGupt application. It focuses on authorization independence and clear separation of concerns to simplify security rules and ensure data integrity. The structure adheres to the principle of path-based ownership for user-specific data, collaborative data, and segregation of data based on access control requirements. Specifically, it:\n\n*   Eliminates the need for `get()` calls in security rules by denormalizing authorization data, thus ensuring Authorization Independence.\n*   Segregates data based on access control needs, placing UserProfiles in their own collection and their associated Contracts into a subcollection. This allows us to use path-based rules for most operations.\n*   Enables secure `list` operations (QAPs) by ensuring that each collection contains documents with homogenous security requirements.\n\nThe data model includes collections for user profiles (`users`) and subcollections for user-owned contracts (`users/{userId}/contracts/{contractId}`). Analysis reports are stored as subcollections to maintain a clear hierarchy. Auditor feedback and annotations are stored as subcollections of contracts to maintain a logical data model."
+    "reasoning": "The Firestore structure is designed to provide a secure, scalable, and easily maintainable data model for the ChitraGupt application. It focuses on authorization independence and clear separation of concerns to simplify security rules and ensure data integrity. The structure adheres to the principle of path-based ownership for user-specific data, collaborative data, and segregation of data based on access control requirements. Specifically, it:\n\n*   Eliminates the need for `get()` calls in security rules by denormalizing authorization data, thus ensuring Authorization Independence.\n*   Segregates data based on access control needs, placing UserProfiles in their own collection and their associated Contracts into a subcollection. This allows us to use path-based rules for most operations.\n*   Enables secure `list` operations (QAPs) by ensuring that each collection contains documents with homogenous security requirements.\n\nThe data model includes collections for user profiles (`users`) and subcollections for user-owned contracts (`users/{userId}/contracts/{contractId}`). Analysis reports are stored as subcollections to maintain a clear hierarchy. Auditor feedback and annotations are stored as subcollections of contracts to maintain a logical data model. A public `auditors` collection is used to securely list auditor profiles without exposing sensitive user data."
   }
 }
+
+    

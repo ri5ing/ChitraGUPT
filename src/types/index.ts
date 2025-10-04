@@ -21,6 +21,15 @@ export type UserProfile = {
   firm?: string;
 };
 
+export type AuditorProfile = {
+    id: string;
+    displayName: string;
+    avatarUrl: string;
+    firm?: string;
+    specialization?: string[];
+    experience?: number;
+}
+
 export type Contract = {
   id: string;
   title: string;
@@ -31,6 +40,7 @@ export type Contract = {
   description?: string;
   aiAnalysis?: AIAnalysisReport;
   auditorFeedback?: AuditorFeedback[];
+  auditorId?: string;
 };
 
 export type AIAnalysisReport = {
@@ -53,3 +63,5 @@ export type AuditorFeedback = {
   feedback: string;
   timestamp: Timestamp;
 };
+
+    

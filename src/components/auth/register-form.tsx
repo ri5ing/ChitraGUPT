@@ -17,11 +17,11 @@ import { Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth, useFirestore } from '@/firebase';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, writeBatch } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { User, Shield } from 'lucide-react';
-import type { UserProfile } from '@/types';
+import type { UserProfile, AuditorProfile } from '@/types';
 import { ClientRegistrationForm } from './client-registration-form';
 import { AuditorRegistrationForm } from './auditor-registration-form';
 import { errorEmitter } from '@/firebase/error-emitter';
@@ -78,29 +78,25 @@ export function RegisterForm() {
         ...(finalProfileDetails as Partial<UserProfile>),
       };
 
-      // Use setDoc and catch potential permission errors
-      setDoc(userRef, userProfileData)
-        .then(() => {
-          router.push('/dashboard');
-        })
-        .catch((serverError) => {
-          const permissionError = new FirestorePermissionError({
-            path: userRef.path,
-            operation: 'create',
-            requestResourceData: userProfileData,
-          });
+      const batch = writeBatch(firestore);
+      batch.set(userRef, userProfileData);
 
-          // Emit the error for global handling
-          errorEmitter.emit('permission-error', permissionError);
+      // If user is an auditor, create a public profile document
+      if (role === 'auditor') {
+        const auditorRef = doc(firestore, 'auditors', user.uid);
+        const auditorProfileData: AuditorProfile = {
+          id: user.uid,
+          displayName: accountDetails.name,
+          avatarUrl: userProfileData.avatarUrl,
+          firm: finalProfileDetails.firm,
+          specialization: finalProfileDetails.specialization,
+          experience: Number(finalProfileDetails.experience),
+        };
+        batch.set(auditorRef, auditorProfileData);
+      }
 
-          // Also inform the user via toast
-          toast({
-            variant: "destructive",
-            title: "Registration Error",
-            description: "Could not create user profile. Please check permissions."
-          });
-          setIsLoading(false);
-        });
+      await batch.commit();
+      router.push('/dashboard');
 
     } catch (e: any) {
       setError(e.message);
@@ -191,3 +187,5 @@ export function RegisterForm() {
 
   return <div>{renderStep()}</div>;
 }
+
+    
