@@ -16,7 +16,7 @@ import { Label } from '@/components/ui/label';
 import { Loader2 } from 'lucide-react';
 import Link from 'next/link';
 
-export function LoginForm() {
+export function RegisterForm() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -26,16 +26,10 @@ export function LoginForm() {
     setIsLoading(true);
     setError(null);
 
-    // Mock authentication
+    // Mock registration
     setTimeout(() => {
-      const email = (event.target as any).elements.email.value;
-      if (email.includes('fail')) {
-        setError('Invalid email or password. Please try again.');
-        setIsLoading(false);
-      } else {
-        // On successful "login", redirect to the dashboard
-        router.push('/dashboard');
-      }
+      // On successful "registration", redirect to the dashboard
+      router.push('/dashboard');
     }, 1000);
   };
 
@@ -43,12 +37,21 @@ export function LoginForm() {
     <Card>
       <form onSubmit={handleSubmit}>
         <CardHeader>
-          <CardTitle>Sign In</CardTitle>
+          <CardTitle>Create Account</CardTitle>
           <CardDescription>
-            Enter your credentials to access your account.
+            Enter your details to create a new account.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="name">Full Name</Label>
+            <Input
+              id="name"
+              type="text"
+              placeholder="John Doe"
+              required
+            />
+          </div>
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input
@@ -56,17 +59,11 @@ export function LoginForm() {
               type="email"
               placeholder="name@example.com"
               required
-              defaultValue="alice@example.com"
             />
           </div>
           <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="password">Password</Label>
-              <Button variant="link" type="button" className="h-auto p-0 text-xs">
-                Forgot password?
-              </Button>
-            </div>
-            <Input id="password" type="password" required defaultValue="password123" />
+            <Label htmlFor="password">Password</Label>
+            <Input id="password" type="password" required />
           </div>
           {error && (
             <p className="text-sm font-medium text-destructive">{error}</p>
@@ -75,12 +72,12 @@ export function LoginForm() {
         <CardFooter className="flex flex-col gap-4">
           <Button type="submit" className="w-full bg-accent hover:bg-accent/90 text-accent-foreground" disabled={isLoading}>
             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Sign In
+            Create Account
           </Button>
           <p className="text-center text-sm text-muted-foreground">
-            Don't have an account?{' '}
+            Already have an account?{' '}
             <Button variant="link" type="button" asChild className="h-auto p-0">
-              <Link href="/register">Sign up</Link>
+              <Link href="/login">Sign in</Link>
             </Button>
           </p>
         </CardFooter>
