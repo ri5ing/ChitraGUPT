@@ -46,7 +46,7 @@ export function ClientRegistrationForm({ onSubmit, isLoading, onBack }: ClientRe
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="mobile">Mobile Number (मोबाइल नंबर)</Label>
-            <Input id="mobile" name="mobile" type="tel" placeholder="e.g., +1 555-555-5555" required />
+            <Input id="mobile" name="mobile" type="tel" placeholder="e.g., +91 98765 43210" required />
           </div>
           <div className="space-y-2">
             <Label htmlFor="organization">Organization (Optional) (संगठन (वैकल्पिक))</Label>

@@ -47,7 +47,7 @@ export function AuditorRegistrationForm({ onSubmit, isLoading, onBack }: Auditor
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="mobile">Mobile Number (मोबाइल नंबर)</Label>
-              <Input id="mobile" name="mobile" type="tel" placeholder="e.g., +1 555-555-5555" required />
+              <Input id="mobile" name="mobile" type="tel" placeholder="e.g., +91 98765 43210" required />
             </div>
             <div className="space-y-2">
                 <Label htmlFor="firm">Firm / Independent (फर्म / स्वतंत्र)</Label>
