@@ -36,6 +36,7 @@ import { enIN } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { ChatDialog } from '../chitragupt-guide/chat-dialog';
+import { RecommendAuditorDialog } from './recommend-auditor-dialog';
 
 type ContractAnalysisProps = {
   contract: Contract;
@@ -182,9 +183,11 @@ export function ContractAnalysis({ contract }: ContractAnalysisProps) {
                 </ChatDialog>
                 <p className="text-xs text-muted-foreground">(1 credit for 3 chats)</p>
                 <div className="flex-grow"></div>
-                 <Button variant="outline" className='w-full md:w-auto' onClick={() => handleFeatureClick('Auditor Recommendation')}>
-                    <Users className="mr-2 h-4 w-4" /> Recommend an Auditor
-                </Button>
+                <RecommendAuditorDialog contractId={contract.id}>
+                    <Button variant="outline" className='w-full md:w-auto'>
+                        <Users className="mr-2 h-4 w-4" /> Recommend an Auditor
+                    </Button>
+                </RecommendAuditorDialog>
             </CardFooter>
         </Card>
         
