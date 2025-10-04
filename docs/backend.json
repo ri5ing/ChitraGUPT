@@ -222,6 +222,32 @@
         "text",
         "position"
       ]
+    },
+    "ChatMessage": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "ChatMessage",
+      "type": "object",
+      "description": "Represents a single message in a chat thread.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the message."
+        },
+        "senderId": {
+          "type": "string",
+          "description": "The UID of the user who sent the message."
+        },
+        "text": {
+          "type": "string",
+          "description": "The content of the message."
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The time the message was sent."
+        }
+      },
+      "required": ["id", "senderId", "text", "timestamp"]
     }
   },
   "auth": {
@@ -266,6 +292,12 @@
         "$ref": "#/backend/entities/Annotation"
       },
       "description": "Stores annotations made by auditors on specific contracts.  The structure ensures that annotations are directly linked to a contract and an auditor."
+    },
+    "/users/{userId}/contracts/{contractId}/chats/{messageId}": {
+      "schema": {
+        "$ref": "#/backend/entities/ChatMessage"
+      },
+      "description": "Stores chat messages for a specific contract review between a client and an auditor."
     }
   }
 }

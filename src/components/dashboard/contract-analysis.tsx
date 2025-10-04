@@ -1,6 +1,6 @@
 'use client';
 
-import type { AIAnalysisReport, Contract } from '@/types';
+import type { AIAnalysisReport, Contract, UserProfile } from '@/types';
 import {
   Card,
   CardContent,
@@ -37,6 +37,9 @@ import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { ChatDialog } from '../chitragupt-guide/chat-dialog';
 import { RecommendAuditorDialog } from './recommend-auditor-dialog';
+import { AuditorChatDialog } from './auditor-chat-dialog';
+import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
+import { doc } from 'firebase/firestore';
 
 type ContractAnalysisProps = {
   contract: Contract;
@@ -72,6 +75,8 @@ const ensureArray = (content: string | string[] | undefined): string[] => {
 
 export function ContractAnalysis({ contract }: ContractAnalysisProps) {
   const { toast } = useToast();
+  const firestore = useFirestore();
+
   const analysis = contract.aiAnalysis;
   const riskScore = analysis?.riskScore ?? 0;
 
@@ -79,6 +84,17 @@ export function ContractAnalysis({ contract }: ContractAnalysisProps) {
   const riskAssessmentPoints = ensureArray(analysis?.riskAssessment);
   const missingClausesPoints = ensureArray(analysis?.missingClauses);
   const recommendationsPoints = ensureArray(analysis?.recommendations);
+
+  const auditorRef = useMemoFirebase(() => 
+    contract.auditorId ? doc(firestore, 'users', contract.auditorId) : null, 
+  [firestore, contract.auditorId]);
+  const clientRef = useMemoFirebase(() => 
+    doc(firestore, 'users', contract.userId),
+  [firestore, contract.userId]);
+
+  const { data: auditorProfile } = useDoc<UserProfile>(auditorRef);
+  const { data: clientProfile } = useDoc<UserProfile>(clientRef);
+
 
   const handleFeatureClick = (featureName: string) => {
     toast({
@@ -219,22 +235,26 @@ export function ContractAnalysis({ contract }: ContractAnalysisProps) {
               ) : (
                 <div className="text-center py-10 rounded-lg border-2 border-dashed">
                   <VenetianMask className="mx-auto h-12 w-12 text-muted-foreground" />
-                  <h3 className="mt-2 text-sm font-medium">No Auditor Feedback Yet</h3>
-                  <p className="mt-1 text-sm text-muted-foreground">Submit this contract for an auditor review.</p>
-                   <Button variant="secondary" className="mt-4" onClick={() => handleFeatureClick('Chat with Auditor')}>
-                        <MessageSquareQuote className="mr-2 h-4 w-4" /> Chat with an Auditor
-                    </Button>
-                    <p className="text-xs text-muted-foreground mt-1">(1 credit per chat)</p>
+                  <h3 className="mt-2 text-sm font-medium">
+                    {contract.status === "In Review" ? `Awaiting Feedback from ${auditorProfile?.displayName || 'Auditor'}`: 'No Auditor Feedback Yet'}
+                  </h3>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {contract.status === "In Review" ? "The auditor has been notified." : "Submit this contract for an auditor review."}
+                  </p>
+                  {contract.status === "In Review" && contract.auditorId && clientProfile && (
+                     <AuditorChatDialog contract={contract} auditorProfile={auditorProfile} clientProfile={clientProfile} />
+                  )}
+                  {contract.status !== "In Review" && (
+                    <>
+                      <Button variant="secondary" className="mt-4" onClick={() => handleFeatureClick('Request Review')}>
+                        <MessageSquareQuote className="mr-2 h-4 w-4" /> Request a Review
+                      </Button>
+                      <p className="text-xs text-muted-foreground mt-1">(1 credit per chat)</p>
+                    </>
+                  )}
                 </div>
               )}
             </div>
-            
-            {/* This section should only be visible to auditors */}
-            {/* <div className="space-y-2 pt-6 border-t">
-                 <Label htmlFor="auditor-feedback" className="font-semibold">Add Your Feedback (Auditor)</Label>
-                 <Textarea id="auditor-feedback" placeholder="As an auditor, type your feedback here..." className="min-h-[120px]"/>
-                 <Button>Submit Feedback</Button>
-            </div> */}
           </CardContent>
         </Card>
     </div>

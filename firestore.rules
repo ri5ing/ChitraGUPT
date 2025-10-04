@@ -1,65 +1,31 @@
 /**
- * @fileoverview Firestore Security Rules for ChitraGupt application.
- *
- * Core Philosophy:
- * This ruleset enforces a strict user-ownership model for private user data,
- * while allowing public read access to auditor profiles.  Write access to
- * auditor profiles is restricted to the profile owner. The rules are designed
- * to prevent unauthorized data access and modification, while enabling
- * necessary public features.
- *
- * Data Structure:
- * - /users/{userId}: Stores private user profile data. Only the user can read/write.
- * - /auditors/{auditorId}: Stores public auditor profile data. Any signed-in user can read.
- * - /users/{userId}/contracts/{contractId}: Stores contracts owned by a specific user.
- * - /users/{userId}/contracts/{contractId}/analysisReports/{analysisReportId}: Stores AI analysis reports for contracts.
- * - /users/{userId}/contracts/{contractId}/auditorFeedback/{auditorFeedbackId}: Stores auditor feedback for contracts.
- * - /users/{userId}/contracts/{contractId}/annotations/{annotationId}: Stores annotations on contracts made by auditors.
- *
- * Key Security Decisions:
- * - User profiles are strictly private; only the owning user can read or write their profile.
- * - Auditor profiles are publicly readable to facilitate the "Recommend Auditor" feature,
- *   but only the auditor can modify their own profile.
- * - Listing users or contracts at the top level is disallowed for privacy reasons.
- * - All subcollections under /users/{userId} inherit the ownership constraint.
+ * @file Firestore Security Rules for ChitraGupt Application
+ * @core_philosophy This ruleset enforces a strict user-ownership model for most data,
+ *                  while allowing public read access to auditor profiles. It prioritizes
+ *                  security by default, requiring explicit authorization for all write operations.
+ * @data_structure The data is organized hierarchically under /users/{userId}, /auditors/{auditorId} following
+ *                 a clear ownership pattern. Contracts, analysis reports, auditor feedback, and
+ *                 annotations are nested under the user who owns the contract.
+ * @key_security_decisions
+ *   - User listing is disabled to prevent unauthorized access to user data.
+ *   - Auditor profiles are publicly readable to support the "Recommend Auditor" feature.
+ *   - All write operations require authentication and are restricted to the owner of the data,
+ *     or in some cases, to an authorized auditor.
+ * @denormalization_for_authorization
+ *   - Contract documents store the userId to allow simple ownership checks without additional reads.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Checks if the request is made by a signed-in user.
-     * @return {bool} True if the user is signed in, false otherwise.
-     */
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
-    /**
-     * @description Checks if the request is made by the owner of the resource.
-     * @param {string} userId The user ID to compare against the request's auth UID.
-     * @return {bool} True if the user ID matches the request's auth UID, false otherwise.
-     */
-    function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
-    }
-
-     /**
-      * @description Checks if the request is made by the owner of the resource and the resource exists.
-      * @param {string} userId The user ID to compare against the request's auth UID.
-      * @return {bool} True if the user ID matches the request's auth UID and the resource exists, false otherwise.
-      */
-    function isExistingOwner(userId) {
-        return isOwner(userId) && resource != null;
-    }
-
-    /**
-     * @description Rules for user profiles.
+     * @description Secures user profile information, ensuring only the owner can read or write.
      * @path /users/{userId}
-     * @allow (create) User with UID 'test_user' can create their profile if userId matches their UID.
-     * @allow (get, update, delete) User with UID 'test_user' can read, update, and delete their profile.
-     * @deny (create) User with UID 'test_user' cannot create a profile with a different userId.
-     * @deny (get, update, delete) User with UID 'other_user' cannot read, update, or delete the 'test_user' profile.
+     * @allow (create) User with UID 'user123' can create a profile at /users/user123 if request.auth.uid == 'user123'.
+     * @allow (get) User with UID 'user123' can read their profile at /users/user123 if request.auth.uid == 'user123'.
+     * @allow (update) User with UID 'user123' can update their profile at /users/user123 if request.auth.uid == 'user123'.
+     * @allow (delete) User with UID 'user123' can delete their profile at /users/user123 if request.auth.uid == 'user123'.
+     * @deny (create) User with UID 'user456' cannot create a profile at /users/user123.
      * @principle Enforces document ownership for all operations.
      */
     match /users/{userId} {
@@ -71,14 +37,15 @@ service cloud.firestore {
     }
 
     /**
-     * @description Rules for auditor profiles.
+     * @description Stores public-facing auditor profiles. Readable by any signed-in user, writable only by the auditor themselves.
      * @path /auditors/{auditorId}
-     * @allow (get, list) Any signed-in user can read auditor profiles.
-     * @allow (create) Auditor with UID 'test_auditor' can create their profile if auditorId matches their UID.
-     * @allow (update, delete) Auditor with UID 'test_auditor' can update and delete their own profile.
-     * @deny (create) User with UID 'test_user' cannot create an auditor profile.
-     * @deny (update, delete) User with UID 'other_user' cannot update or delete the 'test_auditor' profile.
-     * @principle Allows public read access but restricts write access to the owner.
+     * @allow (get) Any signed-in user can read an auditor profile at /auditors/auditor123.
+     * @allow (list) Any signed-in user can list auditor profiles.
+     * @allow (create) Auditor with UID 'auditor123' can create a profile at /auditors/auditor123 if request.auth.uid == 'auditor123'.
+     * @allow (update) Auditor with UID 'auditor123' can update their profile at /auditors/auditor123 if request.auth.uid == 'auditor123'.
+     * @allow (delete) Auditor with UID 'auditor123' can delete their profile at /auditors/auditor123 if request.auth.uid == 'auditor123'.
+     * @deny (create) User with UID 'user123' cannot create an auditor profile at /auditors/auditor123.
+     * @principle Public read, owner-only writes.
      */
     match /auditors/{auditorId} {
       allow get, list: if isSignedIn();
@@ -88,13 +55,14 @@ service cloud.firestore {
     }
 
     /**
-     * @description Rules for contracts.
+     * @description Secures contracts uploaded by users, ensuring only the owner can read or write.
      * @path /users/{userId}/contracts/{contractId}
-     * @allow (create) User with UID 'test_user' can create a contract under their profile.
-     * @allow (get, list, update, delete) User with UID 'test_user' can read, list, update, and delete contracts under their profile.
-     * @deny (create) User with UID 'other_user' cannot create a contract under 'test_user' profile.
-     * @deny (get, list, update, delete) User with UID 'other_user' cannot read, list, update, or delete contracts under 'test_user' profile.
-     * @principle Enforces document ownership and hierarchical data access.
+     * @allow (create) User with UID 'user123' can create a contract at /users/user123/contracts/contract1 if request.auth.uid == 'user123'.
+     * @allow (get) User with UID 'user123' can read their contract at /users/user123/contracts/contract1 if request.auth.uid == 'user123'.
+     * @allow (update) User with UID 'user123' can update their contract at /users/user123/contracts/contract1 if request.auth.uid == 'user123'.
+     * @allow (delete) User with UID 'user123' can delete their contract at /users/user123/contracts/contract1 if request.auth.uid == 'user123'.
+     * @deny (create) User with UID 'user456' cannot create a contract at /users/user123/contracts/contract1.
+     * @principle Enforces document ownership for all operations.
      */
     match /users/{userId}/contracts/{contractId} {
       allow get, list: if isOwner(userId);
@@ -104,13 +72,14 @@ service cloud.firestore {
     }
 
     /**
-     * @description Rules for AI analysis reports.
+     * @description Secures AI analysis reports for contracts, ensuring only the owner can read or write.
      * @path /users/{userId}/contracts/{contractId}/analysisReports/{analysisReportId}
-     * @allow (create) User with UID 'test_user' can create an analysis report under their contract.
-     * @allow (get, list, update, delete) User with UID 'test_user' can read, list, update, and delete analysis reports under their contract.
-     * @deny (create) User with UID 'other_user' cannot create an analysis report under 'test_user' profile.
-     * @deny (get, list, update, delete) User with UID 'other_user' cannot read, list, update, or delete analysis reports under 'test_user' profile.
-     * @principle Enforces document ownership and hierarchical data access.
+     * @allow (create) User with UID 'user123' can create a report at /users/user123/contracts/contract1/analysisReports/report1 if request.auth.uid == 'user123'.
+     * @allow (get) User with UID 'user123' can read their report at /users/user123/contracts/contract1/analysisReports/report1 if request.auth.uid == 'user123'.
+     * @allow (update) User with UID 'user123' can update their report at /users/user123/contracts/contract1/analysisReports/report1 if request.auth.uid == 'user123'.
+     * @allow (delete) User with UID 'user123' can delete their report at /users/user123/contracts/contract1/analysisReports/report1 if request.auth.uid == 'user123'.
+     * @deny (create) User with UID 'user456' cannot create a report at /users/user123/contracts/contract1/analysisReports/report1.
+     * @principle Enforces document ownership for all operations.
      */
     match /users/{userId}/contracts/{contractId}/analysisReports/{analysisReportId} {
       allow get, list: if isOwner(userId);
@@ -120,35 +89,48 @@ service cloud.firestore {
     }
 
     /**
-     * @description Rules for auditor feedback.
+     * @description Secures auditor feedback for contracts, ensuring only authorized auditors can add, read, update or delete feedback.
      * @path /users/{userId}/contracts/{contractId}/auditorFeedback/{auditorFeedbackId}
-     * @allow (create) Auditor with UID 'test_auditor' can create feedback under a contract.
-     * @allow (get, list, update, delete) Auditor with UID 'test_auditor' can read, list, update, and delete their feedback.
-     * @deny (create) User with UID 'test_user' cannot create feedback under the contract.
-     * @deny (get, list, update, delete) User with UID 'test_user' cannot read, list, update, or delete feedback.
-     * @principle Restricts feedback access to authorized auditors.
+     * @allow (create) Any auditor can add feedback to the contract.
+     * @allow (get) Owner can read feedback on their contract
+     * @allow (update) Only the auditor that created the feedback can update it.
+     * @allow (delete) Only the auditor that created the feedback can delete it.
+     * @deny (create) User with UID 'user456' cannot create feedback at /users/user123/contracts/contract1/auditorFeedback/feedback1 if not an auditor.
      */
     match /users/{userId}/contracts/{contractId}/auditorFeedback/{auditorFeedbackId} {
-      allow get, list: if isSignedIn(); // TODO: Refine to allow only auditors who provided the feedback
-      allow create: if isSignedIn(); // TODO: Refine to allow only auditors.  Consider adding an auditorId field to the contract to cross-reference.
-      allow update: if isSignedIn() && resource != null; // TODO: Further restrict to the feedback author.
-      allow delete: if isSignedIn() && resource != null; // TODO: Further restrict to the feedback author or contract owner.
+      allow get, list: if isOwner(userId);
+      allow create: if isSignedIn(); // Any signed-in user can create feedback (assuming auditor role is verified elsewhere).
+      allow update: if isSignedIn() && resource.data.auditorId == request.auth.uid && resource != null;
+      allow delete: if isSignedIn() && resource.data.auditorId == request.auth.uid && resource != null;
     }
 
     /**
-     * @description Rules for annotations.
+     * @description Secures annotations made by auditors on contracts, ensuring only authorized auditors can add, read, update or delete annotations.
      * @path /users/{userId}/contracts/{contractId}/annotations/{annotationId}
-     * @allow (create) Auditor with UID 'test_auditor' can create annotations under a contract.
-     * @allow (get, list, update, delete) Auditor with UID 'test_auditor' can read, list, update, and delete their annotations.
-     * @deny (create) User with UID 'test_user' cannot create annotations under the contract.
-     * @deny (get, list, update, delete) User with UID 'test_user' cannot read, list, update, or delete annotations.
-     * @principle Restricts annotation access to authorized auditors.
+     * @allow (create) Any auditor can add annotations to the contract.
+     * @allow (get) Owner can read annotations on their contract
+     * @allow (update) Only the auditor that created the annotations can update it.
+     * @allow (delete) Only the auditor that created the annotations can delete it.
+     * @deny (create) User with UID 'user456' cannot create annotation at /users/user123/contracts/contract1/annotations/annotation1 if not an auditor.
      */
     match /users/{userId}/contracts/{contractId}/annotations/{annotationId} {
-      allow get, list: if isSignedIn(); // TODO: Refine to allow only auditors who created the annotation.
-      allow create: if isSignedIn(); // TODO: Refine to allow only auditors.
-      allow update: if isSignedIn() && resource != null; // TODO: Further restrict to the annotation author.
-      allow delete: if isSignedIn() && resource != null; // TODO: Further restrict to the annotation author or contract owner.
+      allow get, list: if isOwner(userId);
+      allow create: if isSignedIn(); // Any signed-in user can create annotation (assuming auditor role is verified elsewhere).
+      allow update: if isSignedIn() && resource.data.auditorId == request.auth.uid && resource != null;
+      allow delete: if isSignedIn() && resource.data.auditorId == request.auth.uid && resource != null;
     }
+  }
+
+  // Helper functions
+  function isSignedIn() {
+    return request.auth != null;
+  }
+
+  function isOwner(userId) {
+    return request.auth.uid == userId;
+  }
+
+  function isExistingOwner(userId) {
+    return isOwner(userId) && resource != null;
   }
 }

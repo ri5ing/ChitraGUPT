@@ -64,4 +64,10 @@ export type AuditorFeedback = {
   timestamp: Timestamp;
 };
 
+export type ChatMessage = {
+  id: string;
+  senderId: string;
+  text: string;
+  timestamp: Timestamp;
+};
     
