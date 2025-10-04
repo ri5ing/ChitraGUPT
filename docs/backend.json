@@ -241,7 +241,7 @@
       "schema": {
         "$ref": "#/backend/entities/AuditorProfile"
       },
-      "description": "Stores public-facing information for auditors. This collection can be read by any authenticated user, but only written to by the auditor themselves or an admin."
+      "description": "Stores public-facing auditor profiles. This collection can be read by any authenticated user, which is required for the 'Recommend Auditor' feature. Writes are restricted to the auditor or an admin."
     },
     "/users/{userId}/contracts/{contractId}": {
       "schema": {
