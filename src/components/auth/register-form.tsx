@@ -68,7 +68,7 @@ export function RegisterForm() {
       const userProfileData: UserProfile = {
         id: user.uid,
         displayName: accountDetails.name,
-        email: user.email,
+        email: user.email!,
         role: role!,
         subscriptionPlan: 'Free',
         creditBalance: role === 'client' ? 10 : 0, // Clients get 10 free credits
@@ -106,7 +106,7 @@ export function RegisterForm() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="name">Full Name</Label>
+                  <Label htmlFor="name">Full Name (पूरा नाम)</Label>
                   <Input id="name" type="text" placeholder="John Doe" required />
                 </div>
                 <div className="space-y-2">
