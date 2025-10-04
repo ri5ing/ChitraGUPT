@@ -1,199 +1,148 @@
-/**
- * @fileoverview Firestore Security Rules for ChitraGupt application.
- *
- * Core Philosophy:
- * This ruleset enforces a strict user-ownership model for private user data,
- * while allowing public read access to auditor profiles.  All write operations
- * on user-owned data require the user to be authenticated and the owner of the
- * resource.
- *
- * Data Structure:
- * - /users/{userId}: User profiles, accessible only by the user themselves.
- * - /auditors/{auditorId}: Public auditor profiles, readable by anyone, writable only by the auditor or an admin (not implemented yet).
- * - /users/{userId}/contracts/{contractId}: Contracts owned by a specific user.
- * - /users/{userId}/contracts/{contractId}/analysisReports/{analysisReportId}: AI analysis reports for contracts.
- * - /users/{userId}/contracts/{contractId}/auditorFeedback/{auditorFeedbackId}: Auditor feedback on contracts.
- * - /users/{userId}/contracts/{contractId}/annotations/{annotationId}: Annotations on contracts by auditors.
- * - /users/{userId}/contracts/{contractId}/chats/{messageId}: Chat messages related to a specific contract.
- *
- * Key Security Decisions:
- * - User listing is disallowed for the /users collection to prevent enumeration.
- * - Auditor profiles are publicly readable to enable the "Recommend Auditor" feature.
- * - The rules do NOT implement any role-based access control (admin roles).
- * - Data validation is minimal in this prototyping phase. Only authorization-critical fields are validated.
- *
- * Denormalization for Authorization:
- *  - The rules rely on path-based authorization (e.g., /users/{userId}) to simplify security checks and avoid costly `get()` calls.
- *  - The `userId` is duplicated within the document itself to allow for validation during `create` operations.
- */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Controls access to user profile information.
+     * @description Secures user profile data, ensuring only the owner can read or write.
      * @path /users/{userId}
-     * @allow (create) Authenticated user can create their own profile if the userId matches their auth.uid.
-     * @allow (get, update, delete) Authenticated user can access their own profile.
-     * @deny (create) Creation is denied if the userId does not match the authenticated user's ID.
-     * @deny (get, list, create, update, delete) Unauthorized access or modification attempts.
-     * @principle Enforces document ownership for writes.
+     * @allow (read, write) if request.auth.uid == userId
+     * @deny (read, write) if request.auth.uid != userId
+     * @principle Enforces document ownership for all operations.
      */
     match /users/{userId} {
       function isOwner(userId) {
-        return request.auth != null && request.auth.uid == userId;
-      }
-      function isExistingOwner(userId) {
-        return isOwner(userId) && resource != null;
+        return request.auth.uid == userId;
       }
 
       allow get: if isOwner(userId);
-      allow list: if false; // Disallow listing all users.
-      allow create: if isOwner(userId) && request.resource.data.id == userId;
-      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
-      allow delete: if isExistingOwner(userId);
+      allow list: if false; // Do not allow listing all user profiles.
+      allow create: if isOwner(userId);
+      allow update: if isOwner(userId);
+      allow delete: if isOwner(userId);
     }
 
     /**
-     * @description Controls access to auditor profile information.
+     * @description Allows any authenticated user to read auditor profiles, but only the auditor can modify their own profile.
      * @path /auditors/{auditorId}
-     * @allow (get, list) Any authenticated user can read auditor profiles.
-     * @allow (create) Auditor can create their own profile.
-     * @allow (update, delete) Auditor can update their own profile.
-     * @deny (create, update, delete) Unauthorized access or modification attempts.
-     * @principle Allows public read access to auditor profiles, enforces ownership for writes.
+     * @allow (read) if request.auth != null
+     * @allow (write) if request.auth.uid == auditorId
+     * @deny (write) if request.auth.uid != auditorId
+     * @principle Allows public read access for auditor profiles, enforces ownership for writes.
      */
     match /auditors/{auditorId} {
       function isAuditor(auditorId) {
-        return request.auth != null && request.auth.uid == auditorId;
-      }
-       function isExistingAuditor(auditorId) {
-        return isAuditor(auditorId) && resource != null;
+        return request.auth.uid == auditorId;
       }
 
-      allow get, list: if true;
+      allow get: if request.auth != null;
+      allow list: if request.auth != null;
       allow create: if isAuditor(auditorId);
-      allow update: if isExistingAuditor(auditorId) && request.resource.data.id == resource.data.id;
-      allow delete: if isExistingAuditor(auditorId);
+      allow update: if isAuditor(auditorId) && resource != null;
+      allow delete: if isAuditor(auditorId) && resource != null;
     }
 
     /**
-     * @description Controls access to contracts uploaded by users.
+     * @description Secures contracts, ensuring only the owner (user) can read or write.
      * @path /users/{userId}/contracts/{contractId}
-     * @allow (create) Authenticated user can create a contract under their user ID.
-     * @allow (get, list, update, delete) Authenticated user can access their own contracts.
-     * @deny (create, get, list, update, delete) Unauthorized access or modification attempts.
+     * @allow (read, write) if request.auth.uid == userId
+     * @deny (read, write) if request.auth.uid != userId
      * @principle Enforces document ownership for all operations.
      */
     match /users/{userId}/contracts/{contractId} {
       function isOwner(userId) {
-        return request.auth != null && request.auth.uid == userId;
-      }
-
-       function isExistingOwner(userId) {
-        return isOwner(userId) && resource != null;
-      }
-
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-      allow create: if isOwner(userId) && request.resource.data.userId == userId;
-      allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
-      allow delete: if isExistingOwner(userId);
-    }
-
-    /**
-     * @description Controls access to AI analysis reports for contracts.
-     * @path /users/{userId}/contracts/{contractId}/analysisReports/{analysisReportId}
-     * @allow (create, get, list, update, delete) Authenticated user (owner) can manage AI analysis reports for their contracts.
-     * @deny (create, get, list, update, delete) Unauthorized access or modification attempts.
-     * @principle Enforces document ownership for all operations.
-     */
-    match /users/{userId}/contracts/{contractId}/analysisReports/{analysisReportId} {
-      function isOwner(userId) {
-        return request.auth != null && request.auth.uid == userId;
-      }
-
-       function isExistingOwner(userId) {
-        return isOwner(userId) && resource != null;
+        return request.auth.uid == userId;
       }
 
       allow get: if isOwner(userId);
       allow list: if isOwner(userId);
       allow create: if isOwner(userId);
-      allow update: if isExistingOwner(userId);
-      allow delete: if isExistingOwner(userId);
+      allow update: if isOwner(userId) && resource != null;
+      allow delete: if isOwner(userId) && resource != null;
     }
 
     /**
-     * @description Controls access to auditor feedback for contracts.
+     * @description Secures AI analysis reports for contracts, ensuring only the owner (user) can read or write.
+     * @path /users/{userId}/contracts/{contractId}/analysisReports/{analysisReportId}
+     * @allow (read, write) if request.auth.uid == userId
+     * @deny (read, write) if request.auth.uid != userId
+     * @principle Enforces document ownership for all operations.
+     */
+    match /users/{userId}/contracts/{contractId}/analysisReports/{analysisReportId} {
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId);
+      allow update: if isOwner(userId) && resource != null;
+      allow delete: if isOwner(userId) && resource != null;
+    }
+
+    /**
+     * @description Secures auditor feedback for contracts, allowing only authorized auditors to provide feedback.
      * @path /users/{userId}/contracts/{contractId}/auditorFeedback/{auditorFeedbackId}
-     * @allow (create) Any authenticated user can create auditor feedback.
-     * @allow (get, list) Any authenticated user can read auditor feedback.
-     * @allow (update, delete) Only the owner can update or delete auditor feedback.
-     * @deny (create, get, list, update, delete) Unauthorized access or modification attempts.
-     * @principle Allows any authenticated user to create or read auditor feedback. Enforces ownership for updates and deletes.
+     * @allow (read) if request.auth.uid == userId || (resource.data.auditorId == request.auth.uid)
+     * @allow (create) if true
+     * @allow (update, delete) if resource.data.auditorId == request.auth.uid && resource != null
+     * @deny (create) if !((get(/databases/$(database)/documents/auditors/$(request.auth.uid))).data.id == request.auth.uid)
+     * @principle Enforces that only the contract owner or assigned auditor can read, and only the assigned auditor can write.
      */
     match /users/{userId}/contracts/{contractId}/auditorFeedback/{auditorFeedbackId} {
-          function isOwner(userId) {
-        return request.auth != null && request.auth.uid == userId;
-      }
-       function isExistingOwner(userId) {
-        return isOwner(userId) && resource != null;
-      }
+        function isOwner(userId) {
+            return request.auth.uid == userId;
+        }
 
-      allow get: if true;
-      allow list: if true;
-      allow create: if request.auth != null;
-      allow update: if isExistingOwner(userId);
-      allow delete: if isExistingOwner(userId);
+        function isAuditor() {
+            return exists(/databases/$(database)/documents/auditors/$(request.auth.uid));
+        }
+
+        allow get: if isOwner(userId) || (resource.data.auditorId == request.auth.uid);
+        allow list: if isOwner(userId); // Owner can list feedback
+        allow create: if isAuditor() && request.resource.data.auditorId == request.auth.uid;
+        allow update: if resource.data.auditorId == request.auth.uid && resource != null;
+        allow delete: if resource.data.auditorId == request.auth.uid && resource != null;
     }
 
-     /**
-     * @description Controls access to annotations for contracts.
+    /**
+     * @description Secures annotations made by auditors on contracts.
      * @path /users/{userId}/contracts/{contractId}/annotations/{annotationId}
-     * @allow (create) Any authenticated user can create annotation.
-     * @allow (get, list) Any authenticated user can read annotation.
-     * @allow (update, delete) Only the owner can update or delete annotation.
-     * @deny (create, get, list, update, delete) Unauthorized access or modification attempts.
-     * @principle Allows any authenticated user to create or read annotation. Enforces ownership for updates and deletes.
+     * @allow (read) if request.auth.uid == userId || (resource.data.auditorId == request.auth.uid)
+     * @allow (create) if true
+     * @allow (update, delete) if resource.data.auditorId == request.auth.uid && resource != null
+     * @deny (create) if !((get(/databases/$(database)/documents/auditors/$(request.auth.uid))).data.id == request.auth.uid)
+     * @principle Enforces that only the contract owner or assigned auditor can read, and only the assigned auditor can write.
      */
     match /users/{userId}/contracts/{contractId}/annotations/{annotationId} {
-          function isOwner(userId) {
-        return request.auth != null && request.auth.uid == userId;
-      }
-       function isExistingOwner(userId) {
-        return isOwner(userId) && resource != null;
-      }
+        function isOwner(userId) {
+            return request.auth.uid == userId;
+        }
 
-      allow get: if true;
-      allow list: if true;
-      allow create: if request.auth != null;
-      allow update: if isExistingOwner(userId);
-      allow delete: if isExistingOwner(userId);
+        function isAuditor() {
+            return exists(/databases/$(database)/documents/auditors/$(request.auth.uid));
+        }
+
+        allow get: if isOwner(userId) || (resource.data.auditorId == request.auth.uid);
+        allow list: if isOwner(userId);
+        allow create: if isAuditor() && request.resource.data.auditorId == request.auth.uid;
+        allow update: if resource.data.auditorId == request.auth.uid && resource != null;
+        allow delete: if resource.data.auditorId == request.auth.uid && resource != null;
     }
 
-     /**
-     * @description Controls access to chat messages for contracts.
-     * @path /users/{userId}/contracts/{contractId}/chats/{messageId}
-     * @allow (create) Any authenticated user can create chat message.
-     * @allow (get, list) Any authenticated user can read chat message.
-     * @allow (update, delete) Only the owner can update or delete chat message.
-     * @deny (create, get, list, update, delete) Unauthorized access or modification attempts.
-     * @principle Allows any authenticated user to create or read chat message. Enforces ownership for updates and deletes.
-     */
-    match /users/{userId}/contracts/{contractId}/chats/{messageId} {
-          function isOwner(userId) {
-        return request.auth != null && request.auth.uid == userId;
-      }
-       function isExistingOwner(userId) {
-        return isOwner(userId) && resource != null;
-      }
+       /**
+        * @description Secures chat messages between a client and an auditor for a specific contract review.
+        * @path /users/{userId}/contracts/{contractId}/chats/{messageId}
+        */
+       match /users/{userId}/contracts/{contractId}/chats/{messageId} {
+            function isOwner(userId) {
+                return request.auth.uid == userId;
+            }
 
-      allow get: if true;
-      allow list: if true;
-      allow create: if request.auth != null;
-      allow update: if isExistingOwner(userId);
-      allow delete: if isExistingOwner(userId);
-    }
+            allow get: if isOwner(userId) || (resource.data.senderId == request.auth.uid);
+            allow list: if isOwner(userId);
+            allow create: if request.auth.uid == request.resource.data.senderId;
+            allow update: if request.auth.uid == resource.data.senderId && resource != null;
+            allow delete: if request.auth.uid == resource.data.senderId && resource != null;
+       }
   }
 }
