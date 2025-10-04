@@ -20,6 +20,8 @@ import { ScrollArea } from '../ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Badge } from '../ui/badge';
 import { Skeleton } from '../ui/skeleton';
+import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
+import { AlertCircle } from 'lucide-react';
 
 type RecommendAuditorDialogProps = {
   children: ReactNode;
@@ -35,10 +37,11 @@ export function RecommendAuditorDialog({ children, contractId }: RecommendAudito
   const firestore = useFirestore();
 
   const auditorsQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
     return query(collection(firestore, 'auditors'));
   }, [firestore]);
 
-  const { data: auditors, isLoading: isLoadingAuditors } = useCollection<AuditorProfile>(auditorsQuery);
+  const { data: auditors, isLoading: isLoadingAuditors, error } = useCollection<AuditorProfile>(auditorsQuery);
 
   const handleSendRequest = async () => {
     if (!user || !selectedAuditor) {
@@ -73,6 +76,59 @@ export function RecommendAuditorDialog({ children, contractId }: RecommendAudito
     }
   };
 
+  const renderContent = () => {
+    if (isLoadingAuditors) {
+      return (
+        <>
+          <Skeleton className="h-16 w-full" />
+          <Skeleton className="h-16 w-full" />
+          <Skeleton className="h-16 w-full" />
+        </>
+      );
+    }
+
+    if (error) {
+      return (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>
+            Could not load the list of auditors due to a permissions issue. Our team has been notified.
+          </AlertDescription>
+        </Alert>
+      )
+    }
+
+    if (auditors && auditors.length > 0) {
+      return auditors.map((auditor) => (
+        <button
+          key={auditor.id}
+          className={`w-full p-3 rounded-lg border text-left transition-colors flex items-start gap-4 ${selectedAuditor?.id === auditor.id ? 'border-primary bg-accent' : 'hover:bg-accent/50'}`}
+          onClick={() => setSelectedAuditor(auditor)}
+        >
+          <Avatar>
+            <AvatarImage src={auditor.avatarUrl} alt={auditor.displayName} />
+            <AvatarFallback>{auditor.displayName?.charAt(0)}</AvatarFallback>
+          </Avatar>
+          <div className="flex-1">
+            <div className="font-semibold">{auditor.displayName}</div>
+            <div className="text-sm text-muted-foreground">{auditor.firm}</div>
+              {auditor.specialization && (
+                <div className="flex flex-wrap gap-1 mt-2">
+                  {(Array.isArray(auditor.specialization) ? auditor.specialization : [auditor.specialization]).map(spec => (
+                      <Badge key={spec} variant="secondary">{spec}</Badge>
+                  ))}
+                </div>
+              )}
+          </div>
+        </button>
+      ));
+    }
+
+    return <p className="text-center text-muted-foreground py-10">No auditors found.</p>;
+  }
+
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
@@ -85,39 +141,7 @@ export function RecommendAuditorDialog({ children, contractId }: RecommendAudito
         </DialogHeader>
         <ScrollArea className="h-72 my-4">
             <div className="space-y-4 pr-4">
-            {isLoadingAuditors ? (
-                <>
-                    <Skeleton className="h-16 w-full" />
-                    <Skeleton className="h-16 w-full" />
-                    <Skeleton className="h-16 w-full" />
-                </>
-            ) : (auditors && auditors.length > 0) ? (
-                auditors.map((auditor) => (
-                    <button
-                        key={auditor.id}
-                        className={`w-full p-3 rounded-lg border text-left transition-colors flex items-start gap-4 ${selectedAuditor?.id === auditor.id ? 'border-primary bg-accent' : 'hover:bg-accent/50'}`}
-                        onClick={() => setSelectedAuditor(auditor)}
-                    >
-                        <Avatar>
-                            <AvatarImage src={auditor.avatarUrl} alt={auditor.displayName} />
-                            <AvatarFallback>{auditor.displayName?.charAt(0)}</AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1">
-                            <div className="font-semibold">{auditor.displayName}</div>
-                            <div className="text-sm text-muted-foreground">{auditor.firm}</div>
-                             {auditor.specialization && (
-                                <div className="flex flex-wrap gap-1 mt-2">
-                                    {(Array.isArray(auditor.specialization) ? auditor.specialization : [auditor.specialization]).map(spec => (
-                                        <Badge key={spec} variant="secondary">{spec}</Badge>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                    </button>
-                ))
-            ) : (
-                <p className="text-center text-muted-foreground py-10">No auditors found.</p>
-            )}
+              {renderContent()}
             </div>
         </ScrollArea>
         <DialogFooter>
@@ -131,5 +155,3 @@ export function RecommendAuditorDialog({ children, contractId }: RecommendAudito
     </Dialog>
   );
 }
-
-    
