@@ -2,7 +2,7 @@ import { Timestamp } from "firebase/firestore";
 
 export type UserProfile = {
   id: string;
-  displayName: string;
+  displayName?: string;
   email: string;
   avatarUrl: string;
   role: 'client' | 'auditor' | 'admin';

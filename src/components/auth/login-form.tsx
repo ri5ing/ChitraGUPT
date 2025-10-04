@@ -15,13 +15,16 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Loader2 } from 'lucide-react';
 import Link from 'next/link';
-import { useAuth } from '@/firebase';
+import { useAuth, useFirestore } from '@/firebase';
 import { signInWithEmailAndPassword } from 'firebase/auth';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
+import { UserProfile } from '@/types';
 
 export function LoginForm() {
   const router = useRouter();
   const auth = useAuth();
+  const firestore = useFirestore();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -35,7 +38,29 @@ export function LoginForm() {
     const password = (event.target as any).elements.password.value;
 
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+
+      // Check if user profile exists, if not, create it.
+      const userRef = doc(firestore, 'users', user.uid);
+      const userDoc = await getDoc(userRef);
+
+      if (!userDoc.exists()) {
+        const userProfileData: UserProfile = {
+          id: user.uid,
+          email: user.email!,
+          role: 'client', // Default role
+          subscriptionPlan: 'Free',
+          creditBalance: 10,
+          avatarUrl: `https://picsum.photos/seed/${user.uid}/100/100`,
+        };
+        await setDoc(userRef, userProfileData);
+        toast({
+          title: 'Profile Created',
+          description: "We've created a default profile for you.",
+        });
+      }
+
       router.push('/dashboard');
     } catch (e: any) {
       setError(e.message);
