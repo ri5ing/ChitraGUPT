@@ -1,6 +1,6 @@
 'use client';
 
-import type { AIAnalysisReport, Contract, UserProfile } from '@/types';
+import type { AIAnalysisReport, Contract, UserProfile, AuditorProfile } from '@/types';
 import {
   Card,
   CardContent,
@@ -85,13 +85,14 @@ export function ContractAnalysis({ contract }: ContractAnalysisProps) {
   const recommendationsPoints = ensureArray(analysis?.recommendations);
 
   const auditorRef = useMemoFirebase(() => 
-    contract.auditorId ? doc(firestore, 'users', contract.auditorId) : null, 
+    contract.auditorId ? doc(firestore, 'auditors', contract.auditorId) : null, 
   [firestore, contract.auditorId]);
+
   const clientRef = useMemoFirebase(() => 
     doc(firestore, 'users', contract.userId),
   [firestore, contract.userId]);
 
-  const { data: auditorProfile } = useDoc<UserProfile>(auditorRef);
+  const { data: auditorProfile } = useDoc<AuditorProfile>(auditorRef);
   const { data: clientProfile } = useDoc<UserProfile>(clientRef);
 
   return (
@@ -227,7 +228,7 @@ export function ContractAnalysis({ contract }: ContractAnalysisProps) {
                               <div className="flex-1 space-y-1">
                                   <div className="flex items-center justify-between">
                                       <p className="font-semibold">{fb.auditorName}</p>
-                                      <p className="text-xs text-muted-foreground">{format(fb.timestamp.toDate(), 'Pp', { locale: enIN })}</p>
+                                      <p className="text-xs text-muted-foreground">{fb.timestamp.toDateString()}</p>
                                   </div>
                                   <p className="text-sm text-muted-foreground p-3 bg-secondary rounded-lg">{fb.feedback}</p>
                               </div>
@@ -237,7 +238,7 @@ export function ContractAnalysis({ contract }: ContractAnalysisProps) {
                       <div className="text-center py-6 text-muted-foreground">Awaiting feedback from {auditorProfile.displayName}.</div>
                     )}
                     {clientProfile && (
-                      <AuditorChatDialog contract={contract} auditorProfile={auditorProfile} clientProfile={clientProfile} />
+                      <AuditorChatDialog contract={contract} auditorProfile={clientProfile} clientProfile={clientProfile} />
                     )}
                   </>
                 ) : (

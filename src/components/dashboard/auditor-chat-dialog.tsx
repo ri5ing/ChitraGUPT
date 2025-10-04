@@ -17,7 +17,7 @@ import { Loader2, MessageSquareQuote, Send, User, Bot } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useCollection, useUser, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, addDoc, serverTimestamp, query, orderBy, runTransaction, doc } from 'firebase/firestore';
-import type { ChatMessage, Contract, UserProfile } from '@/types';
+import type { ChatMessage, Contract, UserProfile, AuditorProfile } from '@/types';
 import { ScrollArea } from '../ui/scroll-area';
 import { Avatar, AvatarFallback } from '../ui/avatar';
 import { cn } from '@/lib/utils';
@@ -26,7 +26,7 @@ import { enIN } from 'date-fns/locale';
 
 type AuditorChatDialogProps = {
   contract: Contract;
-  auditorProfile: UserProfile | null;
+  auditorProfile: AuditorProfile | null;
   clientProfile: UserProfile | null;
 };
 
@@ -48,6 +48,7 @@ export function AuditorChatDialog({ contract, auditorProfile, clientProfile }: A
   const { data: messages, isLoading: isLoadingMessages } = useCollection<ChatMessage>(messagesQuery);
   
   const partnerProfile = user?.uid === contract.userId ? auditorProfile : clientProfile;
+  const currentUserProfile = user?.uid === contract.userId ? clientProfile : auditorProfile;
 
   useEffect(() => {
     if (scrollAreaRef.current) {
@@ -99,13 +100,13 @@ export function AuditorChatDialog({ contract, auditorProfile, clientProfile }: A
     }
   };
   
-  const getAvatarFallback = (profile: UserProfile | null) => {
-    return profile?.displayName?.charAt(0) || profile?.email?.charAt(0) || '?';
+  const getAvatarFallback = (profile: UserProfile | AuditorProfile | null) => {
+    return profile?.displayName?.charAt(0) || (profile as UserProfile)?.email?.charAt(0) || '?';
   }
   
   const renderMessage = (message: ChatMessage) => {
     const isUser = message.senderId === user?.uid;
-    const senderProfile = isUser ? (user?.uid === contract.userId ? clientProfile : auditorProfile) : partnerProfile;
+    const senderProfile = isUser ? currentUserProfile : partnerProfile;
 
     return (
       <div
@@ -156,7 +157,7 @@ export function AuditorChatDialog({ contract, auditorProfile, clientProfile }: A
              {isLoading && input && (
               <div className="flex items-start gap-3 flex-row-reverse">
                 <Avatar className="w-8 h-8 border bg-accent text-accent-foreground">
-                    <AvatarFallback>{getAvatarFallback(user?.uid === contract.userId ? clientProfile : auditorProfile)}</AvatarFallback>
+                    <AvatarFallback>{getAvatarFallback(currentUserProfile)}</AvatarFallback>
                 </Avatar>
                 <div className="p-3 rounded-lg bg-accent text-accent-foreground text-sm opacity-50">
                     <p>{input}</p>
