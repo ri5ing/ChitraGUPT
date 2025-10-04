@@ -49,7 +49,7 @@ const getRiskColor = (score: number) => {
   return 'bg-green-600 text-green-foreground';
 };
 
-const getSeverityBadgeClass = (severity: AIAnalysisReport['documentSeverity']) => {
+const getSeverityBadgeClass = (severity?: AIAnalysisReport['documentSeverity']) => {
     switch (severity) {
       case 'Critical':
         return 'bg-red-600 text-white';
@@ -64,10 +64,22 @@ const getSeverityBadgeClass = (severity: AIAnalysisReport['documentSeverity']) =
     }
 }
 
+// Helper to ensure the content is always an array
+const ensureArray = (content: string | string[] | undefined): string[] => {
+    if (Array.isArray(content)) return content;
+    if (typeof content === 'string') return [content];
+    return [];
+}
+
 export function ContractAnalysis({ contract }: ContractAnalysisProps) {
   const { toast } = useToast();
   const analysis = contract.aiAnalysis;
   const riskScore = analysis?.riskScore ?? 0;
+
+  const summaryPoints = ensureArray(analysis?.summary);
+  const riskAssessmentPoints = ensureArray(analysis?.riskAssessment);
+  const missingClausesPoints = ensureArray(analysis?.missingClauses);
+  const recommendationsPoints = ensureArray(analysis?.recommendations);
 
   const handleFeatureClick = (featureName: string) => {
     toast({
@@ -107,7 +119,7 @@ export function ContractAnalysis({ contract }: ContractAnalysisProps) {
                                     <CardTitle className="text-sm font-medium flex items-center gap-2"><BrainCircuit size={16}/> AI Confidence</CardTitle>
                                 </CardHeader>
                                 <CardContent>
-                                    <div className="text-4xl font-bold">{analysis.aiConfidenceScore}%</div>
+                                    <div className="text-4xl font-bold">{analysis.aiConfidenceScore ?? 'N/A'}%</div>
                                 </CardContent>
                             </Card>
                              <Card>
@@ -116,7 +128,7 @@ export function ContractAnalysis({ contract }: ContractAnalysisProps) {
                                 </CardHeader>
                                 <CardContent>
                                     <Badge className={cn("text-base", getSeverityBadgeClass(analysis.documentSeverity))}>
-                                        {analysis.documentSeverity}
+                                        {analysis.documentSeverity ?? 'N/A'}
                                     </Badge>
                                 </CardContent>
                             </Card>
@@ -127,7 +139,7 @@ export function ContractAnalysis({ contract }: ContractAnalysisProps) {
                                 <AccordionTrigger><GanttChartSquare className="mr-2 h-5 w-5 text-accent"/>Contract Summary</AccordionTrigger>
                                 <AccordionContent className="text-base leading-relaxed">
                                     <ul className="list-disc pl-5 space-y-2">
-                                        {analysis.summary.map((item, index) => <li key={index}>{item}</li>)}
+                                        {summaryPoints.map((item, index) => <li key={index}>{item}</li>)}
                                     </ul>
                                 </AccordionContent>
                             </AccordionItem>
@@ -135,7 +147,7 @@ export function ContractAnalysis({ contract }: ContractAnalysisProps) {
                                 <AccordionTrigger><ShieldAlert className="mr-2 h-5 w-5 text-accent"/>Risk Assessment</AccordionTrigger>
                                 <AccordionContent className="text-base leading-relaxed">
                                     <ul className="list-disc pl-5 space-y-2">
-                                        {analysis.riskAssessment.map((item, index) => <li key={index}>{item}</li>)}
+                                        {riskAssessmentPoints.map((item, index) => <li key={index}>{item}</li>)}
                                     </ul>
                                 </AccordionContent>
                             </AccordionItem>
@@ -143,7 +155,7 @@ export function ContractAnalysis({ contract }: ContractAnalysisProps) {
                                 <AccordionTrigger><ListChecks className="mr-2 h-5 w-5 text-accent"/>Missing Clauses</AccordionTrigger>
                                 <AccordionContent>
                                 <ul className="list-disc pl-5 space-y-2 text-base">
-                                    {analysis.missingClauses.map((clause, index) => <li key={index}>{clause}</li>)}
+                                    {missingClausesPoints.map((clause, index) => <li key={index}>{clause}</li>)}
                                 </ul>
                                 </AccordionContent>
                             </AccordionItem>
@@ -151,7 +163,7 @@ export function ContractAnalysis({ contract }: ContractAnalysisProps) {
                                 <AccordionTrigger><FileText className="mr-2 h-5 w-5 text-accent"/>Recommendations</AccordionTrigger>
                                 <AccordionContent className="text-base leading-relaxed">
                                      <ul className="list-disc pl-5 space-y-2">
-                                        {analysis.recommendations.map((item, index) => <li key={index}>{item}</li>)}
+                                        {recommendationsPoints.map((item, index) => <li key={index}>{item}</li>)}
                                     </ul>
                                 </AccordionContent>
                             </AccordionItem>
