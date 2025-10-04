@@ -51,6 +51,7 @@ export const mockContracts: Omit<Contract, 'uploadDate'>[] & {uploadDate: string
     status: 'Completed',
     uploadDate: '2023-10-26',
     riskScore: 25,
+    fileName: 'msa-tech-services.pdf',
     aiAnalysis: {
       id: 'analysis-001',
       summary: 'This Master Services Agreement outlines the terms for providing ongoing software development and support. Key sections include service levels, payment terms, and intellectual property rights. The agreement has a term of two years, with an option for renewal.',
@@ -79,6 +80,7 @@ export const mockContracts: Omit<Contract, 'uploadDate'>[] & {uploadDate: string
     status: 'In Review',
     uploadDate: '2023-11-15',
     riskScore: 55,
+    fileName: 'nda-beta-testers.pdf',
     aiAnalysis: {
         id: 'analysis-002',
         summary: 'A Non-Disclosure Agreement for beta testers of a new mobile application. It covers confidential information, tester obligations, and the duration of the confidentiality.',
@@ -97,6 +99,7 @@ export const mockContracts: Omit<Contract, 'uploadDate'>[] & {uploadDate: string
     status: 'Action Required',
     uploadDate: '2023-12-01',
     riskScore: 85,
+    fileName: 'commercial-lease.pdf',
     aiAnalysis: {
         id: 'analysis-003',
         summary: 'This is a 5-year commercial lease agreement for a retail space. It details rent, maintenance responsibilities, and use of premises.',
@@ -115,6 +118,7 @@ export const mockContracts: Omit<Contract, 'uploadDate'>[] & {uploadDate: string
     status: 'Pending',
     uploadDate: '2024-01-05',
     riskScore: 10,
+    fileName: 'freelance-design.pdf',
     aiAnalysis: undefined,
     auditorFeedback: []
   },

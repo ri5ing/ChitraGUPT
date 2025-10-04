@@ -19,8 +19,20 @@ import { useAuth, useFirestore } from '@/firebase';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { User, Shield } from 'lucide-react';
+import type { UserProfile } from '@/types';
+import { ClientRegistrationForm } from './client-registration-form';
+import { AuditorRegistrationForm } from './auditor-registration-form';
+
+type Step = 'initial' | 'client' | 'auditor' | 'finalize';
 
 export function RegisterForm() {
+  const [step, setStep] = useState<Step>('initial');
+  const [role, setRole] = useState<'client' | 'auditor' | null>(null);
+  const [accountDetails, setAccountDetails] = useState({ email: '', password: '', name: '' });
+  const [profileDetails, setProfileDetails] = useState<Partial<UserProfile>>({});
+
   const router = useRouter();
   const auth = useAuth();
   const firestore = useFirestore();
@@ -28,30 +40,43 @@ export function RegisterForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleInitialSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (!role) {
+      setError('Please select a role.');
+      return;
+    }
+    const name = (event.target as any).elements.name.value;
+    const email = (event.target as any).elements.email.value;
+    const password = (event.target as any).elements.password.value;
+    setAccountDetails({ name, email, password });
+    setStep(role);
+  };
+  
+  const handleFinalSubmit = async (details: any) => {
     setIsLoading(true);
     setError(null);
 
-    const displayName = (event.target as any).elements.name.value;
-    const email = (event.target as any).elements.email.value;
-    const password = (event.target as any).elements.password.value;
+    const finalProfileDetails = { ...profileDetails, ...details };
 
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const userCredential = await createUserWithEmailAndPassword(auth, accountDetails.email, accountDetails.password);
       const user = userCredential.user;
 
-      // Create user profile in Firestore
       const userRef = doc(firestore, 'users', user.uid);
-      await setDoc(userRef, {
+      
+      const userProfileData: UserProfile = {
         id: user.uid,
-        displayName: displayName,
+        displayName: accountDetails.name,
         email: user.email,
-        role: 'client',
+        role: role!,
         subscriptionPlan: 'Free',
-        creditBalance: 10,
-        avatarUrl: `https://picsum.photos/seed/${user.uid}/100/100`
-      });
+        creditBalance: role === 'client' ? 10 : 0, // Clients get 10 free credits
+        avatarUrl: `https://picsum.photos/seed/${user.uid}/100/100`,
+        ...(finalProfileDetails as Partial<UserProfile>),
+      };
+
+      await setDoc(userRef, userProfileData);
 
       router.push('/dashboard');
     } catch (e: any) {
@@ -61,59 +86,86 @@ export function RegisterForm() {
         title: 'Registration Failed',
         description: e.message,
       });
+    } finally {
       setIsLoading(false);
     }
   };
 
-  return (
-    <Card>
-      <form onSubmit={handleSubmit}>
-        <CardHeader>
-          <CardTitle>Create Account</CardTitle>
-          <CardDescription>
-            Enter your details to create a new account.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="name">Full Name</Label>
-            <Input
-              id="name"
-              type="text"
-              placeholder="John Doe"
-              required
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              placeholder="name@example.com"
-              required
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
-            <Input id="password" type="password" required />
-          </div>
-          {error && (
-            <p className="text-sm font-medium text-destructive">{error}</p>
-          )}
-        </CardContent>
-        <CardFooter className="flex flex-col gap-4">
-          <Button type="submit" className="w-full bg-accent hover:bg-accent/90 text-accent-foreground" disabled={isLoading}>
-            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Create Account
-          </Button>
-          <p className="text-center text-sm text-muted-foreground">
-            Already have an account?{' '}
-            <Button variant="link" type="button" asChild className="h-auto p-0">
-              <Link href="/login">Sign in</Link>
-            </Button>
-          </p>
-        </CardFooter>
-      </form>
-    </Card>
-  );
+
+  const renderStep = () => {
+    switch (step) {
+      case 'initial':
+        return (
+          <Card>
+            <form onSubmit={handleInitialSubmit}>
+              <CardHeader>
+                <CardTitle>Create Account</CardTitle>
+                <CardDescription>
+                  First, let's get your basic account details.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Full Name</Label>
+                  <Input id="name" type="text" placeholder="John Doe" required />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input id="email" type="email" placeholder="name@example.com" required />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="password">Password</Label>
+                  <Input id="password" type="password" required />
+                </div>
+                <div className="space-y-3">
+                  <Label>I am a...</Label>
+                  <RadioGroup onValueChange={(value) => setRole(value as 'client' | 'auditor')} value={role ?? undefined} className="grid grid-cols-2 gap-4">
+                    <div>
+                      <RadioGroupItem value="client" id="client" className="peer sr-only" />
+                      <Label
+                        htmlFor="client"
+                        className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
+                      >
+                        <User className="mb-3 h-6 w-6" />
+                        Client
+                      </Label>
+                    </div>
+                    <div>
+                      <RadioGroupItem value="auditor" id="auditor" className="peer sr-only" />
+                      <Label
+                        htmlFor="auditor"
+                        className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
+                      >
+                        <Shield className="mb-3 h-6 w-6" />
+                        Auditor
+                      </Label>
+                    </div>
+                  </RadioGroup>
+                </div>
+                {error && <p className="text-sm font-medium text-destructive">{error}</p>}
+              </CardContent>
+              <CardFooter className="flex flex-col gap-4">
+                <Button type="submit" className="w-full bg-accent hover:bg-accent/90 text-accent-foreground" disabled={isLoading || !role}>
+                  {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Next'}
+                </Button>
+                <p className="text-center text-sm text-muted-foreground">
+                  Already have an account?{' '}
+                  <Button variant="link" type="button" asChild className="h-auto p-0">
+                    <Link href="/login">Sign in</Link>
+                  </Button>
+                </p>
+              </CardFooter>
+            </form>
+          </Card>
+        );
+      case 'client':
+        return <ClientRegistrationForm onSubmit={handleFinalSubmit} isLoading={isLoading} onBack={() => setStep('initial')} />;
+      case 'auditor':
+        return <AuditorRegistrationForm onSubmit={handleFinalSubmit} isLoading={isLoading} onBack={() => setStep('initial')} />;
+      default:
+        return null;
+    }
+  };
+
+  return <div>{renderStep()}</div>;
 }

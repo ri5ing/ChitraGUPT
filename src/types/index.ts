@@ -8,6 +8,17 @@ export type UserProfile = {
   role: 'client' | 'auditor' | 'admin';
   creditBalance: number;
   subscriptionPlan: 'Free' | 'Pro' | 'Enterprise';
+  mobile?: string;
+  organization?: string;
+  motive?: string;
+  kyc?: {
+    aadharName?: string;
+    aadharNumber?: string;
+  };
+  specialization?: 'Corporate Law' | 'IP' | 'Employment' | 'Tax' | 'International Trade' | 'Other';
+  experience?: number;
+  certifications?: string;
+  firm?: string;
 };
 
 export type Contract = {
