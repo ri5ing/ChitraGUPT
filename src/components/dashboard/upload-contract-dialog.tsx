@@ -18,7 +18,8 @@ import { useToast } from '@/hooks/use-toast';
 import { useUser, useFirestore } from '@/firebase';
 import { addDoc, collection, serverTimestamp, doc, runTransaction } from 'firebase/firestore';
 import { contractSummaryAndRiskAssessment } from '@/ai/flows/contract-summary-and-risk-assessment';
-import type { AIAnalysisReport, UserProfile } from '@/types';
+import type { UserProfile } from '@/types';
+import { Textarea } from '../ui/textarea';
 
 function fileToDataUri(file: File): Promise<string> {
     return new Promise((resolve, reject) => {
@@ -36,8 +37,7 @@ export function UploadContractDialog() {
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [file, setFile] = useState<File | null>(null);
-  const [title, setTitle] = useState('');
-  const [clientName, setClientName] = useState('');
+  const [description, setDescription] = useState('');
   const { toast } = useToast();
   const { user } = useUser();
   const firestore = useFirestore();
@@ -50,11 +50,11 @@ export function UploadContractDialog() {
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!file || !title || !clientName || !user) {
+    if (!file || !user) {
       toast({
         variant: 'destructive',
         title: 'Missing Information',
-        description: 'Please fill out all fields and select a file.',
+        description: 'Please select a file to upload.',
       });
       return;
     }
@@ -63,23 +63,19 @@ export function UploadContractDialog() {
 
     try {
         const userRef = doc(firestore, 'users', user.uid);
-        const currentUserProfile = (await runTransaction(firestore, async (transaction) => {
+        
+        // Check user's credit balance
+        const currentUserProfile = await runTransaction(firestore, async (transaction) => {
             const userDoc = await transaction.get(userRef);
             if (!userDoc.exists()) {
-                throw "User document doesn't exist!";
+                throw new Error("User document doesn't exist!");
             }
-            return userDoc.data() as UserProfile;
-        }));
-
-        if(currentUserProfile.creditBalance <= 0) {
-            toast({
-                variant: 'destructive',
-                title: 'Insufficient Credits',
-                description: 'You do not have enough credits to analyze a contract.',
-            });
-            setIsLoading(false);
-            return;
-        }
+            const profile = userDoc.data() as UserProfile;
+            if (profile.creditBalance <= 0) {
+                throw new Error('Insufficient credits');
+            }
+            return profile;
+        });
 
       const contractDataUri = await fileToDataUri(file);
       const analysisResult = await contractSummaryAndRiskAssessment({ contractDataUri });
@@ -89,17 +85,17 @@ export function UploadContractDialog() {
       await runTransaction(firestore, async (transaction) => {
         const userDoc = await transaction.get(userRef);
         if (!userDoc.exists()) {
-          throw "User document doesn't exist!";
+          throw new Error("User document doesn't exist!");
         }
         const currentBalance = userDoc.data().creditBalance;
         if (currentBalance <= 0) {
-          throw 'Insufficient credits';
+          throw new Error('Insufficient credits');
         }
 
-        // Add new contract
+        // Add new contract document, using the filename as the title
         transaction.set(doc(contractsRef), {
-            title,
-            clientName,
+            title: file.name,
+            description: description, // Optional description
             userId: user.uid,
             status: 'Completed',
             uploadDate: serverTimestamp(),
@@ -109,6 +105,7 @@ export function UploadContractDialog() {
                 id: crypto.randomUUID(),
             },
             riskScore: analysisResult.riskScore,
+            clientName: 'N/A' // No longer collecting this field in the form
         });
 
         // Decrement credit balance
@@ -118,13 +115,12 @@ export function UploadContractDialog() {
 
       toast({
         title: 'Contract Analyzed',
-        description: `${title} has been successfully uploaded and analyzed.`,
+        description: `${file.name} has been successfully uploaded and analyzed.`,
       });
 
       // Reset form and close dialog
       setFile(null);
-      setTitle('');
-      setClientName('');
+      setDescription('');
       setOpen(false);
     } catch (error: any) {
       console.error('Error uploading and analyzing contract: ', error);
@@ -156,32 +152,6 @@ export function UploadContractDialog() {
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="title" className="text-right">
-                Title
-              </Label>
-              <Input
-                id="title"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                className="col-span-3"
-                placeholder="e.g. Master Services Agreement"
-                required
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="clientName" className="text-right">
-                Client Name
-              </Label>
-              <Input
-                id="clientName"
-                value={clientName}
-                onChange={(e) => setClientName(e.target.value)}
-                className="col-span-3"
-                placeholder="e.g. Innovate Corp"
-                required
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="contract-file" className="text-right">
                 File
               </Label>
@@ -192,6 +162,18 @@ export function UploadContractDialog() {
                 className="col-span-3"
                 accept=".pdf,.doc,.docx,.txt"
                 required
+              />
+            </div>
+            <div className="grid grid-cols-4 items-start gap-4">
+              <Label htmlFor="description" className="text-right pt-2">
+                Description
+              </Label>
+              <Textarea
+                id="description"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                className="col-span-3"
+                placeholder="(Optional) Add any notes or context about this contract."
               />
             </div>
           </div>
