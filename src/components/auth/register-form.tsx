@@ -24,6 +24,8 @@ import { User, Shield } from 'lucide-react';
 import type { UserProfile } from '@/types';
 import { ClientRegistrationForm } from './client-registration-form';
 import { AuditorRegistrationForm } from './auditor-registration-form';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 type Step = 'initial' | 'client' | 'auditor' | 'finalize';
 
@@ -76,9 +78,30 @@ export function RegisterForm() {
         ...(finalProfileDetails as Partial<UserProfile>),
       };
 
-      await setDoc(userRef, userProfileData);
+      // Use setDoc and catch potential permission errors
+      setDoc(userRef, userProfileData)
+        .then(() => {
+          router.push('/dashboard');
+        })
+        .catch((serverError) => {
+          const permissionError = new FirestorePermissionError({
+            path: userRef.path,
+            operation: 'create',
+            requestResourceData: userProfileData,
+          });
 
-      router.push('/dashboard');
+          // Emit the error for global handling
+          errorEmitter.emit('permission-error', permissionError);
+
+          // Also inform the user via toast
+          toast({
+            variant: "destructive",
+            title: "Registration Error",
+            description: "Could not create user profile. Please check permissions."
+          });
+          setIsLoading(false);
+        });
+
     } catch (e: any) {
       setError(e.message);
       toast({
@@ -86,7 +109,6 @@ export function RegisterForm() {
         title: 'Registration Failed',
         description: e.message,
       });
-    } finally {
       setIsLoading(false);
     }
   };
