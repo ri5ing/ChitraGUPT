@@ -72,6 +72,19 @@ export function AppHeader({ user }: AppHeaderProps) {
     }
   };
 
+  const getInitials = () => {
+    if (user.displayName) {
+      return user.displayName
+        .split(' ')
+        .map((n) => n[0])
+        .join('');
+    }
+    if (user.email) {
+      return user.email.substring(0, 2).toUpperCase();
+    }
+    return '??';
+  };
+
   return (
     <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm md:px-6">
       <div className="md:hidden">
@@ -93,14 +106,11 @@ export function AppHeader({ user }: AppHeaderProps) {
             <Avatar className="h-8 w-8">
               <AvatarImage src={user.avatarUrl} alt={user.displayName} />
               <AvatarFallback>
-                {user.displayName
-                  .split(' ')
-                  .map((n) => n[0])
-                  .join('')}
+                {getInitials()}
               </AvatarFallback>
             </Avatar>
             <div className="hidden text-left md:block">
-              <div className="text-sm font-medium">{user.displayName}</div>
+              <div className="text-sm font-medium">{user.displayName || user.email}</div>
               <div className="text-xs text-muted-foreground">{user.email}</div>
             </div>
             <ChevronDown className="hidden h-4 w-4 md:block" />
