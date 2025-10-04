@@ -11,14 +11,12 @@ export function StatsCards() {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
 
-  const userProfileRef = useMemoFirebase(() => {
+  const userProfileQuery = useMemoFirebase(() => {
     if (!user) return null;
-    return collection(firestore, 'users');
+    return query(collection(firestore, 'users'), where('id', '==', user.uid));
   }, [firestore, user]);
 
-  const { data: userProfileData, isLoading: isProfileLoading } = useCollection<UserProfile>(
-    userProfileRef && query(userProfileRef, where('id', '==', user?.uid))
-  );
+  const { data: userProfileData, isLoading: isProfileLoading } = useCollection<UserProfile>(userProfileQuery);
 
   const contractsRef = useMemoFirebase(() => {
     if (!user) return null;
