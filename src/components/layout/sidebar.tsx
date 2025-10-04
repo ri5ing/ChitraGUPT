@@ -38,7 +38,7 @@ export function AppSidebar({ user, isLoading }: AppSidebarProps) {
   const roleLinks = {
     client: [],
     auditor: [
-      { href: '#', icon: <ShieldCheck />, label: 'Review Queue' },
+      { href: '#/review-queue', icon: <ShieldCheck />, label: 'Review Queue' },
     ],
     admin: [
       { href: '/dashboard/admin', icon: <UserCog />, label: 'Admin Panel' },
