@@ -84,7 +84,7 @@ export function AuditorRegistrationForm({ onSubmit, isLoading, onBack }: Auditor
         }
     }
 
-    const formData = new FormData(event.currentTarget);
+    const formData = new FormData(event.target as HTMLFormElement);
     const data = Object.fromEntries(formData.entries());
     onSubmit({ ...data, specialization: specializations, ...kycData });
   };

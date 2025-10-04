@@ -69,7 +69,7 @@ export function ClientRegistrationForm({ onSubmit, isLoading, onBack }: ClientRe
         }
     }
 
-    const formData = new FormData(event.currentTarget);
+    const formData = new FormData(event.target as HTMLFormElement);
     const data = Object.fromEntries(formData.entries());
     onSubmit({ ...data, ...kycData });
   };
