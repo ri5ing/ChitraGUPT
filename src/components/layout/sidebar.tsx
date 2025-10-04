@@ -31,14 +31,14 @@ type AppSidebarProps = {
 export function AppSidebar({ user, isLoading }: AppSidebarProps) {
   const commonLinks = [
     { href: '/dashboard', icon: <LayoutDashboard />, label: 'Dashboard' },
-    { href: '#', icon: <FileText />, label: 'Contracts' },
+    { href: '/dashboard/contracts', icon: <FileText />, label: 'Contracts' },
     { href: '/dashboard/auditors', icon: <Users />, label: 'Find Auditors' },
   ];
 
   const roleLinks = {
     client: [],
     auditor: [
-      { href: '#/review-queue', icon: <ShieldCheck />, label: 'Review Queue' },
+      { href: '/dashboard/review-queue', icon: <ShieldCheck />, label: 'Review Queue' },
     ],
     admin: [
       { href: '/dashboard/admin', icon: <UserCog />, label: 'Admin Panel' },
