@@ -1,8 +1,9 @@
 export const firebaseConfig = {
-  "projectId": "studio-512789147-c299e",
-  "appId": "1:716970536385:web:b661f5e0c32c0f263f1340",
-  "apiKey": "AIzaSyAATc48_FJTXq58s0A1O1onwYzKvFrY5WU",
-  "authDomain": "studio-512789147-c299e.firebaseapp.com",
-  "measurementId": "",
-  "messagingSenderId": "716970536385"
+  "projectId": "chitragupt-ai",
+  "appId": "1:314977230973:web:e28c1358f8c5122b9d5114",
+  "apiKey": "AIzaSyA-Ir2B5P4FrCWaVOlYW6I0md1YH-Z1ouA",
+  "authDomain": "chitragupt-ai.firebaseapp.com",
+  "storageBucket": "chitragupt-ai.appspot.com",
+  "messagingSenderId": "314977230973",
+  "measurementId": "G-GZS8BBQ119"
 };

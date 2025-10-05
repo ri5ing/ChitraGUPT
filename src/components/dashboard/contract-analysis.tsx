@@ -238,7 +238,7 @@ export function ContractAnalysis({ contract }: ContractAnalysisProps) {
                       <div className="text-center py-6 text-muted-foreground">Awaiting feedback from {auditorProfile.displayName}.</div>
                     )}
                     {clientProfile && (
-                      <AuditorChatDialog contract={contract} auditorProfile={clientProfile} clientProfile={clientProfile} />
+                      <AuditorChatDialog contract={contract} auditorProfile={auditorProfile} clientProfile={clientProfile} />
                     )}
                   </>
                 ) : (
