@@ -131,47 +131,51 @@ export function AvailableAuditors({ contract }: AvailableAuditorsProps) {
     }
 
     if (auditors && auditors.length > 0) {
-      return auditors.map((auditor) => (
-        <Card key={auditor.id} className="w-full text-left">
-            <CardHeader className="pb-4">
+      return (
+        <div className="space-y-4">
+          {auditors.map((auditor) => (
+            <Card key={auditor.id} className="w-full text-left">
+              <CardHeader className="pb-4">
                 <div className="flex items-start gap-4">
-                    <Avatar className="w-12 h-12 border">
-                        <AvatarImage src={auditor.avatarUrl} alt={auditor.displayName} />
-                        <AvatarFallback>{auditor.displayName?.charAt(0)}</AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1">
-                        <p className="font-semibold">{auditor.displayName}</p>
-                        <p className="text-sm text-muted-foreground">{auditor.firm || 'Independent'}</p>
-                    </div>
+                  <Avatar className="w-12 h-12 border">
+                    <AvatarImage src={auditor.avatarUrl} alt={auditor.displayName} />
+                    <AvatarFallback>{auditor.displayName?.charAt(0)}</AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1">
+                    <p className="font-semibold">{auditor.displayName}</p>
+                    <p className="text-sm text-muted-foreground">{auditor.firm || 'Independent'}</p>
+                  </div>
                 </div>
-            </CardHeader>
-            <CardContent className="space-y-3">
-                 {auditor.specialization && (
-                    <div className="flex flex-wrap gap-1">
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {auditor.specialization && (
+                  <div className="flex flex-wrap gap-1">
                     {(Array.isArray(auditor.specialization) ? auditor.specialization : [auditor.specialization]).map((spec: string) => (
-                        <Badge key={spec} variant="secondary" className="text-xs">{spec}</Badge>
+                      <Badge key={spec} variant="secondary" className="text-xs">{spec}</Badge>
                     ))}
-                    </div>
+                  </div>
                 )}
-                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <Star className="h-3 w-3 text-yellow-500 fill-yellow-500" />
-                    <span>{auditor.experience || 'New'} years of experience</span>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <Star className="h-3 w-3 text-yellow-500 fill-yellow-500" />
+                  <span>{auditor.experience || 'New'} years of experience</span>
                 </div>
-                 <Button 
-                    onClick={() => handleSendRequest(auditor)} 
-                    disabled={isLoading && selectedAuditorId === auditor.id}
-                    className="w-full"
-                    size="sm"
+                <Button
+                  onClick={() => handleSendRequest(auditor)}
+                  disabled={isLoading && selectedAuditorId === auditor.id}
+                  className="w-full"
+                  size="sm"
                 >
-                    {isLoading && selectedAuditorId === auditor.id 
-                        ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 
-                        : <MessageSquareQuote className="mr-2 h-4 w-4" />
-                    }
-                    Request Review
+                  {isLoading && selectedAuditorId === auditor.id
+                    ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    : <MessageSquareQuote className="mr-2 h-4 w-4" />
+                  }
+                  Request Review
                 </Button>
-            </CardContent>
-        </Card>
-      ));
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      );
     }
 
     return <p className="text-center text-muted-foreground py-10">No auditors found.</p>;
@@ -187,9 +191,7 @@ export function AvailableAuditors({ contract }: AvailableAuditorsProps) {
       </CardHeader>
       <CardContent>
         <ScrollArea className="h-96 pr-4 -mr-4">
-            <div className="space-y-4">
-              {renderContent()}
-            </div>
+          {renderContent()}
         </ScrollArea>
       </CardContent>
     </Card>

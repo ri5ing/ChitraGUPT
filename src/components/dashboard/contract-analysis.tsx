@@ -35,7 +35,6 @@ import { format } from 'date-fns';
 import { enIN } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { ChatDialog } from '../chitragupt-guide/chat-dialog';
-import { RecommendAuditorDialog } from './recommend-auditor-dialog';
 import { AuditorChatDialog } from './auditor-chat-dialog';
 import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import { doc } from 'firebase/firestore';
@@ -199,8 +198,10 @@ export function ContractAnalysis({ contract }: ContractAnalysisProps) {
                   <p className="text-xs text-muted-foreground">(1 credit for 3 chats)</p>
               </CardFooter>
           </Card>
-          
-          <Card>
+      </div>
+
+      <div className="lg:col-span-1 space-y-6">
+        <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2"><Users className="text-accent" /> Auditor Review</CardTitle>
               <CardDescription>
@@ -248,19 +249,11 @@ export function ContractAnalysis({ contract }: ContractAnalysisProps) {
                     )}
                   </>
                 ) : (
-                  <div className="text-center py-10 rounded-lg border-2 border-dashed">
-                    <VenetianMask className="mx-auto h-12 w-12 text-muted-foreground" />
-                    <h3 className="mt-2 text-sm font-medium">No Auditor Assigned</h3>
-                    <p className="mt-1 text-sm text-muted-foreground">Select an auditor from the list to request a review.</p>
-                  </div>
+                  <AvailableAuditors contract={contract} />
                 )}
               </div>
             </CardContent>
           </Card>
-      </div>
-
-      <div className="lg:col-span-1 space-y-6">
-        <AvailableAuditors contract={contract} />
       </div>
     </div>
   );

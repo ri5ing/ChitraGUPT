@@ -1,6 +1,7 @@
 import { StatsCards } from '@/components/dashboard/stats-cards';
 import { RecentContracts } from '@/components/dashboard/recent-contracts';
 import { UploadContractDialog } from '@/components/dashboard/upload-contract-dialog';
+import { ReviewRequests } from '@/components/dashboard/review-requests';
 
 export default function DashboardPage() {
   return (
@@ -17,6 +18,8 @@ export default function DashboardPage() {
 
       <StatsCards />
 
+      <ReviewRequests />
+      
       <RecentContracts />
     </div>
   );
