@@ -146,6 +146,31 @@
         "recommendations"
       ]
     },
+    "PublicContractReport": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "PublicContractReport",
+      "type": "object",
+      "description": "A publicly accessible, read-only version of a contract analysis report.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique, unguessable identifier for the public report."
+        },
+        "contractTitle": {
+          "type": "string",
+          "description": "The title of the original contract."
+        },
+        "uploadDate": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The original upload date of the contract."
+        },
+        "analysis": {
+          "$ref": "#/backend/entities/AIAnalysisReport"
+        }
+      },
+      "required": ["id", "contractTitle", "uploadDate", "analysis"]
+    },
     "AuditorFeedback": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "AuditorFeedback",
@@ -274,6 +299,12 @@
         "$ref": "#/backend/entities/Contract"
       },
       "description": "Stores contracts uploaded by users. The userId parameter ensures that only the owner can access the contract (path-based ownership)."
+    },
+    "/publicReports/{reportId}": {
+      "schema": {
+        "$ref": "#/backend/entities/PublicContractReport"
+      },
+      "description": "Stores read-only copies of contract analysis reports for sharing via a public link. This collection is readable by anyone but writeable only by server-side logic."
     },
     "/users/{userId}/contracts/{contractId}/analysisReports/{analysisReportId}": {
       "schema": {

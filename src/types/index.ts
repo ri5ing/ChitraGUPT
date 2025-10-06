@@ -43,6 +43,13 @@ export type Contract = {
   auditorId?: string;
 };
 
+export type PublicContractReport = {
+  id: string;
+  contractTitle: string;
+  uploadDate: Timestamp;
+  analysis: AIAnalysisReport;
+}
+
 export type AIAnalysisReport = {
   id: string;
   summary: string[];

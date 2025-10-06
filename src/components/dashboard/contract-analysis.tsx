@@ -40,6 +40,7 @@ import { AuditorChatDialog } from './auditor-chat-dialog';
 import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import { AvailableAuditors } from './available-auditors';
+import { ShareReportButton } from './share-report-button';
 
 type ContractAnalysisProps = {
   contract: Contract;
@@ -100,10 +101,15 @@ export function ContractAnalysis({ contract }: ContractAnalysisProps) {
       <div className="lg:col-span-2 space-y-6">
           <Card>
               <CardHeader>
-                  <CardTitle className="flex items-center gap-2"><Bot className="text-accent" /> AI-Powered Report</CardTitle>
-                  <CardDescription>
-                  Analysis for <span className="font-semibold">{contract.title}</span>. This report is AI-generated and should be used as a guide.
-                  </CardDescription>
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <CardTitle className="flex items-center gap-2"><Bot className="text-accent" /> AI-Powered Report</CardTitle>
+                      <CardDescription>
+                      Analysis for <span className="font-semibold">{contract.title}</span>. This report is AI-generated and should be used as a guide.
+                      </CardDescription>
+                    </div>
+                     {analysis && <ShareReportButton contract={contract} />}
+                  </div>
               </CardHeader>
               <CardContent>
                   {!analysis ? (
@@ -237,7 +243,7 @@ export function ContractAnalysis({ contract }: ContractAnalysisProps) {
                     ) : (
                       <div className="text-center py-6 text-muted-foreground">Awaiting feedback from {auditorProfile.displayName}.</div>
                     )}
-                    {clientProfile && (
+                    {clientProfile && auditorProfile && (
                       <AuditorChatDialog contract={contract} auditorProfile={auditorProfile} clientProfile={clientProfile} />
                     )}
                   </>
