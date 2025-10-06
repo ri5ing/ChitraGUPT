@@ -171,6 +171,23 @@
       },
       "required": ["id", "contractTitle", "uploadDate", "analysis"]
     },
+    "ReviewRequest": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "ReviewRequest",
+      "type": "object",
+      "description": "Represents a request for an auditor to review a contract.",
+      "properties": {
+        "id": { "type": "string", "description": "Unique ID for the review request." },
+        "contractId": { "type": "string", "description": "ID of the original contract." },
+        "contractTitle": { "type": "string", "description": "Title of the contract." },
+        "clientId": { "type": "string", "description": "UID of the client who made the request." },
+        "clientName": { "type": "string", "description": "Display name of the client." },
+        "auditorId": { "type": "string", "description": "UID of the assigned auditor." },
+        "status": { "type": "string", "description": "Status of the review (pending, accepted, rejected).", "enum": ["pending", "accepted", "rejected"] },
+        "requestDate": { "type": "string", "format": "date-time", "description": "Timestamp when the request was made." }
+      },
+      "required": ["id", "contractId", "contractTitle", "clientId", "clientName", "auditorId", "status", "requestDate"]
+    },
     "AuditorFeedback": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "AuditorFeedback",
@@ -305,6 +322,12 @@
         "$ref": "#/backend/entities/PublicContractReport"
       },
       "description": "Stores read-only copies of contract analysis reports for sharing via a public link. This collection is readable by anyone but writeable only by server-side logic."
+    },
+    "/reviewRequests/{requestId}": {
+      "schema": {
+        "$ref": "#/backend/entities/ReviewRequest"
+      },
+      "description": "Stores contract review requests sent to auditors. This collection can be read by the assigned auditor and the client who created the request. Writes are restricted."
     },
     "/users/{userId}/contracts/{contractId}/analysisReports/{analysisReportId}": {
       "schema": {

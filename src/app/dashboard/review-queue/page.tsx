@@ -20,35 +20,66 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { useCollection, useFirestore, useUser, useMemoFirebase } from "@/firebase";
-import type { Contract } from "@/types";
-import { collectionGroup, query, where } from "firebase/firestore";
+import type { ReviewRequest, Contract } from "@/types";
+import { collection, query, where, doc } from "firebase/firestore";
 import { format } from "date-fns";
 import { enIN } from "date-fns/locale";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ContractAnalysis } from "@/components/dashboard/contract-analysis";
+import { useDoc } from "@/firebase/firestore/use-doc";
+
+function ExpandedRequestDetail({ request }: { request: ReviewRequest }) {
+    const firestore = useFirestore();
+
+    const contractRef = useMemoFirebase(() => {
+        if (!firestore || !request) return null;
+        return doc(firestore, `users/${request.contractUserId}/contracts`, request.contractId);
+    }, [firestore, request]);
+    
+    const { data: contract, isLoading, error } = useDoc<Contract>(contractRef);
+
+    if (isLoading) {
+        return <div className="p-4 text-center">Loading contract details...</div>
+    }
+
+    if (error) {
+        return <div className="p-4 text-center text-destructive">Could not load contract details.</div>
+    }
+
+    if (!contract) {
+        return <div className="p-4 text-center text-muted-foreground">Contract data not found.</div>
+    }
+
+    return (
+      <div className="p-4 bg-muted/50 rounded-lg">
+        <ContractAnalysis contract={contract} />
+      </div>
+    );
+}
+
 
 export default function ReviewQueuePage() {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
-  const [expandedContractId, setExpandedContractId] = useState<string | null>(null);
+  const [expandedRequestId, setExpandedRequestId] = useState<string | null>(null);
 
   const reviewQueueQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
     return query(
-      collectionGroup(firestore, 'contracts'),
+      collection(firestore, 'reviewRequests'),
       where('auditorId', '==', user.uid),
-      where('status', '==', 'In Review')
+      where('status', '==', 'accepted')
     );
   }, [firestore, user]);
 
-  const { data: contracts, isLoading: isContractsLoading, error } = useCollection<Contract>(reviewQueueQuery);
+  const { data: requests, isLoading: isRequestsLoading, error } = useCollection<ReviewRequest>(reviewQueueQuery);
 
-  const handleToggleRow = (contractId: string) => {
-    setExpandedContractId(prevId => prevId === contractId ? null : contractId);
+  const handleToggleRow = (requestId: string) => {
+    setExpandedRequestId(prevId => prevId === requestId ? null : requestId);
   };
   
   const renderContent = () => {
-    const isLoading = isUserLoading || isContractsLoading;
+    const isLoading = isUserLoading || isRequestsLoading;
     if (isLoading) {
       return (
           [...Array(3)].map((_, i) => (
@@ -64,45 +95,43 @@ export default function ReviewQueuePage() {
     }
     
     if (error) {
-      return <TableRow><TableCell colSpan={5} className="text-center text-destructive p-4">Error loading review queue. You may not have permission to view this.</TableCell></TableRow>
+      return <TableRow><TableCell colSpan={5} className="text-center text-destructive p-4">Error loading review queue. Please check your permissions.</TableCell></TableRow>
     }
 
-    if (!contracts || contracts.length === 0) {
-      return <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground p-8">You have no contracts in your review queue.</TableCell></TableRow>
+    if (!requests || requests.length === 0) {
+      return <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground p-8">You have no active contracts in your review queue.</TableCell></TableRow>
     }
 
     return (
-      contracts.map((contract) => (
-        <React.Fragment key={contract.id}>
+      requests.map((request) => (
+        <React.Fragment key={request.id}>
           <TableRow>
             <TableCell>
-              <div className="font-medium">{contract.title}</div>
+              <div className="font-medium">{request.contractTitle}</div>
             </TableCell>
              <TableCell className="hidden md:table-cell">
-              {/* This would ideally show the client's name. Requires another query. */}
-              <div className="text-muted-foreground text-xs">{contract.userId}</div>
+              <div className="font-medium">{request.clientName}</div>
+              <div className="text-muted-foreground text-xs">{request.clientId}</div>
             </TableCell>
             <TableCell className="hidden md:table-cell">
-              {contract.uploadDate ? format(contract.uploadDate.toDate(), 'P', { locale: enIN }) : 'N/A'}
+              {request.requestDate ? format(request.requestDate.toDate(), 'P', { locale: enIN }) : 'N/A'}
             </TableCell>
             <TableCell>
               <Badge variant="secondary" className="capitalize">
-                {contract.status}
+                In Review
               </Badge>
             </TableCell>
             <TableCell className="text-right">
-                <Button variant="ghost" size="sm" onClick={() => handleToggleRow(contract.id)}>
-                    {expandedContractId === contract.id ? <ChevronUp/> : <ChevronDown/>}
+                <Button variant="ghost" size="sm" onClick={() => handleToggleRow(request.id)}>
+                    {expandedRequestId === request.id ? <ChevronUp/> : <ChevronDown/>}
                     <span className="ml-2 hidden sm:inline">View Details</span>
                 </Button>
             </TableCell>
           </TableRow>
-          {expandedContractId === contract.id && (
+          {expandedRequestId === request.id && (
             <TableRow>
               <TableCell colSpan={5}>
-                <div className="p-4 bg-muted/50 rounded-lg">
-                  <ContractAnalysis contract={contract} />
-                </div>
+                <ExpandedRequestDetail request={request} />
               </TableCell>
             </TableRow>
           )}
@@ -114,8 +143,8 @@ export default function ReviewQueuePage() {
   return (
     <div className="space-y-6">
         <div>
-            <h2 className="text-2xl font-bold tracking-tight font-headline">Review Queue</h2>
-            <p className="text-muted-foreground">Contracts assigned to you for review.</p>
+            <h2 className="text-2xl font-bold tracking-tight font-headline">Active Review Queue</h2>
+            <p className="text-muted-foreground">Contracts you have accepted and are actively reviewing.</p>
         </div>
         <Card>
         <CardContent className="pt-6">

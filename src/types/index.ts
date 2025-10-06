@@ -77,4 +77,16 @@ export type ChatMessage = {
   text: string;
   timestamp: Timestamp;
 };
+
+export type ReviewRequest = {
+  id: string;
+  contractId: string;
+  contractTitle: string;
+  contractUserId: string; // The user ID of the contract owner
+  clientId: string;
+  clientName: string;
+  auditorId: string;
+  status: 'pending' | 'accepted' | 'rejected';
+  requestDate: Timestamp;
+};
     

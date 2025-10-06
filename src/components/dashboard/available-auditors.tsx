@@ -10,9 +10,9 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, doc, updateDoc } from 'firebase/firestore';
-import type { AuditorProfile, Contract } from '@/types';
+import { useUser, useFirestore, useCollection, useMemoFirebase, useDoc } from '@/firebase';
+import { collection, query, doc, updateDoc, addDoc, serverTimestamp, writeBatch } from 'firebase/firestore';
+import type { AuditorProfile, Contract, UserProfile } from '@/types';
 import { Loader2, MessageSquareQuote, Send, Star } from 'lucide-react';
 import { ScrollArea } from '../ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
@@ -32,6 +32,13 @@ export function AvailableAuditors({ contract }: AvailableAuditorsProps) {
   const { user } = useUser();
   const firestore = useFirestore();
 
+  const userProfileRef = useMemoFirebase(() => {
+    if (!user) return null;
+    return doc(firestore, 'users', user.uid);
+  }, [firestore, user]);
+
+  const { data: currentUserProfile } = useDoc<UserProfile>(userProfileRef);
+
   const auditorsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
     return query(collection(firestore, 'auditors'));
@@ -40,7 +47,7 @@ export function AvailableAuditors({ contract }: AvailableAuditorsProps) {
   const { data: auditors, isLoading: isLoadingAuditors, error } = useCollection<AuditorProfile>(auditorsQuery);
 
   const handleSendRequest = async (auditor: AuditorProfile) => {
-    if (!user) {
+    if (!user || !currentUserProfile) {
       toast({ variant: 'destructive', title: 'Error', description: 'You are not logged in.' });
       return;
     }
@@ -48,17 +55,36 @@ export function AvailableAuditors({ contract }: AvailableAuditorsProps) {
     setIsLoading(true);
     
     try {
+      const batch = writeBatch(firestore);
+
+      // 1. Update the original contract status and auditorId
       const contractRef = doc(firestore, 'users', user.uid, 'contracts', contract.id);
-      await updateDoc(contractRef, {
+      batch.update(contractRef, {
         status: 'In Review',
         auditorId: auditor.id
       });
 
+      // 2. Create a new document in the `reviewRequests` collection
+      const reviewRequestRef = doc(collection(firestore, 'reviewRequests'));
+      batch.set(reviewRequestRef, {
+        contractId: contract.id,
+        contractTitle: contract.title,
+        contractUserId: contract.userId,
+        clientId: user.uid,
+        clientName: currentUserProfile.displayName || user.email,
+        auditorId: auditor.id,
+        status: 'pending',
+        requestDate: serverTimestamp(),
+      });
+
+      await batch.commit();
+
       toast({
         title: 'Request Sent',
-        description: `Your request has been sent to ${auditor.displayName}.`,
+        description: `Your review request has been sent to ${auditor.displayName}.`,
       });
     } catch (error: any) {
+      console.error("Error sending review request:", error);
       toast({
         variant: 'destructive',
         title: 'Failed to send request',
