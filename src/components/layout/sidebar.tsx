@@ -16,6 +16,7 @@ import {
   UserCog,
   Bot,
   Users,
+  User,
 } from 'lucide-react';
 import { Logo } from '@/components/icons';
 import type { UserProfile } from '@/types';
@@ -96,16 +97,26 @@ export function AppSidebar({ user, isLoading }: AppSidebarProps) {
           </div>
         )}
         <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton>
-              <LifeBuoy />
-              <span>Support</span>
+           <SidebarMenuItem>
+            <SidebarMenuButton asChild>
+              <Link href="/dashboard/profile">
+                <User />
+                <span>Profile</span>
+              </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
+            <SidebarMenuButton asChild>
+              <Link href="/dashboard/settings">
+                <Settings />
+                <span>Settings</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+           <SidebarMenuItem>
             <SidebarMenuButton>
-              <Settings />
-              <span>Settings</span>
+              <LifeBuoy />
+              <span>Support</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>

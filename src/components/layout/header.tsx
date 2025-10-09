@@ -30,6 +30,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '../ui/skeleton';
 import { useAtom } from 'jotai';
 import { languageAtom } from '@/lib/language-atom';
+import Link from 'next/link';
 
 type AppHeaderProps = {
   user: UserProfile | null;
@@ -139,9 +140,11 @@ export function AppHeader({ user, isLoading }: AppHeaderProps) {
           <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuLabel>My Account</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              <UserIcon />
-              Profile
+            <DropdownMenuItem asChild>
+              <Link href="/dashboard/profile">
+                <UserIcon />
+                Profile
+              </Link>
             </DropdownMenuItem>
             <DropdownMenuItem onClick={handleAddCredits}>
               <PlusCircle />
@@ -151,9 +154,11 @@ export function AppHeader({ user, isLoading }: AppHeaderProps) {
               <CreditCard />
               Billing
             </DropdownMenuItem>
-            <DropdownMenuItem>
-              <Settings />
-              Settings
+            <DropdownMenuItem asChild>
+              <Link href="/dashboard/settings">
+                <Settings />
+                Settings
+              </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleLogout}>
