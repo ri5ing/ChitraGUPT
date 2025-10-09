@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -13,8 +13,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { useFirestore } from '@/firebase';
-import { addDoc, collection } from 'firebase/firestore';
+import { useFirestore, useUser } from '@/firebase';
+import { addDoc, collection, doc, writeBatch } from 'firebase/firestore';
 import type { Contract, PublicContractReport } from '@/types';
 import { Check, Copy, Loader2, Share2 } from 'lucide-react';
 
@@ -29,13 +29,21 @@ export function ShareReportButton({ contract }: ShareReportButtonProps) {
   const [hasCopied, setHasCopied] = useState(false);
   const { toast } = useToast();
   const firestore = useFirestore();
+  const { user } = useUser();
+
+  useEffect(() => {
+    if (open && contract.publicReportId) {
+      const link = `${window.location.origin}/report/${contract.publicReportId}`;
+      setSharedLink(link);
+    }
+  }, [open, contract.publicReportId]);
 
   const handleShare = async () => {
-    if (!contract.aiAnalysis) {
+    if (!contract.aiAnalysis || !user) {
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: 'Analysis data is not available for this contract.',
+        description: 'Analysis data is not available or you are not logged in.',
       });
       return;
     }
@@ -48,12 +56,17 @@ export function ShareReportButton({ contract }: ShareReportButtonProps) {
         analysis: contract.aiAnalysis,
       };
 
-      const docRef = await addDoc(
-        collection(firestore, 'publicReports'),
-        publicReport
-      );
+      const batch = writeBatch(firestore);
+
+      const publicReportRef = doc(collection(firestore, 'publicReports'));
+      batch.set(publicReportRef, publicReport);
       
-      const link = `${window.location.origin}/report/${docRef.id}`;
+      const contractRef = doc(firestore, 'users', user.uid, 'contracts', contract.id);
+      batch.update(contractRef, { publicReportId: publicReportRef.id });
+      
+      await batch.commit();
+      
+      const link = `${window.location.origin}/report/${publicReportRef.id}`;
       setSharedLink(link);
 
     } catch (error: any) {
@@ -76,7 +89,10 @@ export function ShareReportButton({ contract }: ShareReportButtonProps) {
   const handleOpenChange = (isOpen: boolean) => {
     setOpen(isOpen);
     if (!isOpen) {
-      setSharedLink('');
+      // Reset state when closing, except for the generated link if it exists
+      if (!contract.publicReportId) {
+         setSharedLink('');
+      }
       setHasCopied(false);
     }
   };
@@ -94,8 +110,8 @@ export function ShareReportButton({ contract }: ShareReportButtonProps) {
           <DialogTitle>Share Report</DialogTitle>
           <DialogDescription>
             {sharedLink
-              ? 'Anyone with this link can view the contract analysis.'
-              : 'Generate a secure link to share this report with an auditor.'}
+              ? 'Anyone with this link can view a read-only version of the contract analysis.'
+              : 'Generate a secure link to share this report.'}
           </DialogDescription>
         </DialogHeader>
         {sharedLink ? (

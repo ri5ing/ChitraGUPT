@@ -27,7 +27,7 @@
  * Denormalization for Authorization:
  *  - The rules rely on path-based ownership (`/users/{userId}`) to avoid `get()` calls
  *    and efficiently enforce access control. For example, contracts are stored under
- *    `/users/{userId}/contracts/{contractId}` to easily check ownership using `isOwner(userId)`.
+ *    `/users/{userId}/co,acts/{contractId}` to easily check ownership using `isOwner(userId)`.
  */
 
 rules_version = '2';

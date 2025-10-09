@@ -41,6 +41,7 @@ export type Contract = {
   aiAnalysis?: AIAnalysisReport;
   auditorFeedback?: AuditorFeedback[];
   auditorId?: string;
+  publicReportId?: string;
 };
 
 export type PublicContractReport = {

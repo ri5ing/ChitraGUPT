@@ -98,6 +98,10 @@
         "analysisReportId": {
           "type": "string",
           "description": "Reference to the AIAnalysisReport. (Relationship: Contract 1:1 AIAnalysisReport)"
+        },
+        "publicReportId": {
+            "type": "string",
+            "description": "Reference to the PublicContractReport. (Relationship: Contract 1:1 PublicContractReport)"
         }
       },
       "required": [
