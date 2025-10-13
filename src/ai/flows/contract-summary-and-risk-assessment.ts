@@ -21,6 +21,7 @@ export type ContractSummaryAndRiskAssessmentInput = z.infer<typeof ContractSumma
 
 const ContractSummaryAndRiskAssessmentOutputSchema = z.object({
   summary: z.array(z.string()).describe('A concise summary of the key terms of the contract, presented as a list of points.'),
+  sanitizedSummary: z.array(z.string()).describe('A version of the summary that redacts all personally identifiable information (PII), names, addresses, and specific monetary values.'),
   riskAssessment: z.array(z.string()).describe('An assessment of potential risks associated with the contract, presented as a list of points.'),
   missingClauses: z.array(z.string()).describe('List of any important clauses that seem to be missing from the contract.'),
   recommendations: z.array(z.string()).describe('Recommendations for the client to improve their position, presented as a list of points.'),
@@ -42,12 +43,13 @@ const prompt = ai.definePrompt({
 
 Analyze the contract provided and provide the following in a structured manner:
 1.  **Summary**: A list of key points summarizing the contract's main terms.
-2.  **Risk Assessment**: A bulleted list detailing potential risks.
-3.  **Missing Clauses**: A list of important clauses that appear to be missing.
-4.  **Recommendations**: A list of actionable recommendations for the client.
-5.  **Risk Score**: A numerical score from 0 to 100, where 100 is extremely high risk.
-6.  **AI Confidence Score**: Your confidence in this analysis from 0-100.
-7.  **Document Severity**: The overall severity of this contract, categorized as 'Low', 'Medium', 'High', or 'Critical'.
+2.  **Sanitized Summary**: A version of the summary that redacts all personally identifiable information (PII), names, addresses, and specific monetary values, suitable for sharing with third parties.
+3.  **Risk Assessment**: A bulleted list detailing potential risks.
+4.  **Missing Clauses**: A list of important clauses that appear to be missing.
+5.  **Recommendations**: A list of actionable recommendations for the client.
+6.  **Risk Score**: A numerical score from 0 to 100, where 100 is extremely high risk.
+7.  **AI Confidence Score**: Your confidence in this analysis from 0-100.
+8.  **Document Severity**: The overall severity of this contract, categorized as 'Low', 'Medium', 'High', or 'Critical'.
 
 Analyze the following contract.
 

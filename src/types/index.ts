@@ -54,6 +54,7 @@ export type PublicContractReport = {
 export type AIAnalysisReport = {
   id: string;
   summary: string[];
+  sanitizedSummary: string[];
   riskAssessment: string[];
   missingClauses: string[];
   recommendations: string[];
@@ -89,5 +90,12 @@ export type ReviewRequest = {
   auditorId: string;
   status: 'pending' | 'accepted' | 'rejected';
   requestDate: Timestamp;
+  // New fields for the secure connection workflow
+  budget?: number;
+  clientConcerns?: string;
+  shareAiSummary: boolean;
+  aiSummary?: string[];
+  riskScore?: number;
+  documentSeverity?: AIAnalysisReport['documentSeverity'];
 };
     

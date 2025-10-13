@@ -20,6 +20,7 @@ import { Badge } from '../ui/badge';
 import { Skeleton } from '../ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 import { AlertCircle } from 'lucide-react';
+import { RequestReviewDialog } from './request-review-dialog';
 
 type AvailableAuditorsProps = {
   contract: Contract;
@@ -159,18 +160,12 @@ export function AvailableAuditors({ contract }: AvailableAuditorsProps) {
                   <Star className="h-3 w-3 text-yellow-500 fill-yellow-500" />
                   <span>{auditor.experience || 'New'} years of experience</span>
                 </div>
-                <Button
-                  onClick={() => handleSendRequest(auditor)}
-                  disabled={isLoading && selectedAuditorId === auditor.id}
-                  className="w-full"
-                  size="sm"
-                >
-                  {isLoading && selectedAuditorId === auditor.id
-                    ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    : <MessageSquareQuote className="mr-2 h-4 w-4" />
-                  }
-                  Request Review
-                </Button>
+                <RequestReviewDialog contract={contract} auditor={auditor} currentUserProfile={currentUserProfile}>
+                  <Button className="w-full" size="sm">
+                    <MessageSquareQuote className="mr-2 h-4 w-4" />
+                    Request Review
+                  </Button>
+                </RequestReviewDialog>
               </CardContent>
             </Card>
           ))}
