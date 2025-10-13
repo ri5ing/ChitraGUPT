@@ -36,6 +36,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import { ScrollArea } from "../ui/scroll-area";
 
 const getRiskColor = (score: number) => {
   if (score > 75) return 'bg-destructive';
@@ -70,28 +71,30 @@ function RequestDetailsDialog({ request }: { request: ReviewRequest }) {
             Contract: <span className="font-semibold">{request.contractTitle}</span>
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-4 py-4">
-            <div>
-                <h4 className="font-semibold text-sm mb-1">Client</h4>
-                <p className="text-sm text-muted-foreground">{request.clientName}</p>
-            </div>
-             <div>
-                <h4 className="font-semibold text-sm mb-1">Proposed Budget</h4>
-                <p className="text-sm text-muted-foreground">{request.budget ? `₹${request.budget.toLocaleString('en-IN')}` : 'Not specified'}</p>
-            </div>
-            <div>
-                <h4 className="font-semibold text-sm mb-1">Key Concerns from Client</h4>
-                <p className="text-sm text-muted-foreground p-3 bg-muted rounded-md">{request.clientConcerns || 'No specific concerns raised.'}</p>
-            </div>
-           {request.shareAiSummary && request.aiSummary && (
-                <div>
-                    <h4 className="font-semibold text-sm mb-1">AI-Generated Summary (Sanitized)</h4>
-                    <ul className="list-disc pl-5 space-y-1 text-sm text-muted-foreground p-3 bg-muted rounded-md">
-                        {request.aiSummary.map((item, index) => <li key={index}>{item}</li>)}
-                    </ul>
-                </div>
-            )}
-        </div>
+        <ScrollArea className="max-h-[70vh] pr-6 -mr-6">
+          <div className="space-y-4 py-4">
+              <div>
+                  <h4 className="font-semibold text-sm mb-1">Client</h4>
+                  <p className="text-sm text-muted-foreground">{request.clientName}</p>
+              </div>
+              <div>
+                  <h4 className="font-semibold text-sm mb-1">Proposed Budget</h4>
+                  <p className="text-sm text-muted-foreground">{request.budget ? `₹${request.budget.toLocaleString('en-IN')}` : 'Not specified'}</p>
+              </div>
+              <div>
+                  <h4 className="font-semibold text-sm mb-1">Key Concerns from Client</h4>
+                  <p className="text-sm text-muted-foreground p-3 bg-muted rounded-md">{request.clientConcerns || 'No specific concerns raised.'}</p>
+              </div>
+            {request.shareAiSummary && request.aiSummary && request.aiSummary.length > 0 && (
+                  <div>
+                      <h4 className="font-semibold text-sm mb-1">AI-Generated Summary (Sanitized)</h4>
+                      <ul className="list-disc pl-5 space-y-1 text-sm text-muted-foreground p-3 bg-muted rounded-md">
+                          {request.aiSummary.map((item, index) => <li key={index}>{item}</li>)}
+                      </ul>
+                  </div>
+              )}
+          </div>
+        </ScrollArea>
       </DialogContent>
     </Dialog>
   )
