@@ -40,6 +40,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ContractAnalysis } from "@/components/dashboard/contract-analysis";
 import { useToast } from "@/hooks/use-toast";
 import { UploadContractDialog } from "@/components/dashboard/upload-contract-dialog";
+import { EditableTitle } from "@/components/dashboard/editable-title";
 
 export default function AllContractsPage() {
   const { user, isUserLoading } = useUser();
@@ -117,7 +118,7 @@ export default function AllContractsPage() {
         <React.Fragment key={contract.id}>
           <TableRow>
             <TableCell>
-              <div className="font-medium">{contract.title}</div>
+              <EditableTitle contract={contract} />
             </TableCell>
             <TableCell className="hidden md:table-cell">
               {contract.uploadDate ? format(contract.uploadDate.toDate(), 'P', { locale: enIN }) : 'N/A'}
