@@ -21,7 +21,7 @@ import { Button } from "@/components/ui/button";
 import { Check, Loader2, X, Eye } from "lucide-react";
 import { useCollection, useFirestore, useUser, useMemoFirebase } from "@/firebase";
 import type { ReviewRequest, UserProfile, AIAnalysisReport } from "@/types";
-import { collection, query, where, doc, writeBatch } from "firebase/firestore";
+import { collection, query, where, doc, writeBatch, increment } from "firebase/firestore";
 import { format } from "date-fns";
 import { enIN } from "date-fns/locale";
 import { Skeleton } from "../ui/skeleton";
@@ -126,6 +126,7 @@ export function ReviewRequests() {
   const { data: requests, isLoading: isRequestsLoading, error } = useCollection<ReviewRequest>(pendingRequestsQuery);
 
   const handleUpdateRequest = async (request: ReviewRequest, newStatus: 'accepted' | 'rejected') => {
+    if (!user) return;
     setIsUpdating(request.id);
     try {
         const batch = writeBatch(firestore);
@@ -135,6 +136,9 @@ export function ReviewRequests() {
 
         const contractRef = doc(firestore, `users/${request.contractUserId}/contracts`, request.contractId);
         
+        const auditorUserRef = doc(firestore, 'users', user.uid);
+        const auditorPublicRef = doc(firestore, 'auditors', user.uid);
+
         if (newStatus === 'rejected') {
             batch.update(contractRef, { 
                 status: 'Action Required',
@@ -144,6 +148,9 @@ export function ReviewRequests() {
             batch.update(contractRef, {
                 status: 'In Review'
             });
+            // Increment active contract count for both user and public profiles
+            batch.update(auditorUserRef, { currentActiveContracts: increment(1) });
+            batch.update(auditorPublicRef, { currentActiveContracts: increment(1) });
         }
         
         await batch.commit();

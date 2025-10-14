@@ -21,6 +21,7 @@ import { Skeleton } from '../ui/skeleton';
 import { useEffect, useState } from 'react';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 import { AlertCircle } from 'lucide-react';
+import { Separator } from '../ui/separator';
 
 const specializationOptions: MultiSelectOption[] = [
     { value: 'Corporate Law', label: 'Corporate Law' },
@@ -69,20 +70,26 @@ export function UserProfileForm() {
         if (!user || !userProfile) return;
 
         setIsLoading(true);
+        const updateData: Partial<UserProfile> = {
+            ...formState,
+            maxActiveContracts: Number(formState.maxActiveContracts) || 0,
+            experience: Number(formState.experience) || 0,
+        }
 
         try {
             const batch = writeBatch(firestore);
 
             const userRef = doc(firestore, 'users', user.uid);
-            batch.update(userRef, formState);
+            batch.update(userRef, updateData);
 
             if (userProfile.role === 'auditor') {
                 const auditorRef = doc(firestore, 'auditors', user.uid);
                 const auditorProfileData: Partial<AuditorProfile> = {
-                    displayName: formState.displayName,
-                    firm: formState.firm,
-                    specialization: formState.specialization,
-                    experience: Number(formState.experience),
+                    displayName: updateData.displayName,
+                    firm: updateData.firm,
+                    specialization: updateData.specialization,
+                    experience: updateData.experience,
+                    maxActiveContracts: updateData.maxActiveContracts,
                 };
                 batch.update(auditorRef, auditorProfileData);
             }
@@ -177,6 +184,11 @@ export function UserProfileForm() {
 
           {userProfile.role === 'auditor' && (
             <>
+                <Separator className="my-6" />
+                <div className="space-y-1">
+                    <h3 className="text-lg font-semibold">Auditor Settings</h3>
+                    <p className="text-sm text-muted-foreground">Manage your public auditor profile and workload.</p>
+                </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                         <Label htmlFor="firm">Firm / Independent</Label>
@@ -196,6 +208,11 @@ export function UserProfileForm() {
                         placeholder="Select your areas of expertise..."
                         className="w-full"
                     />
+                </div>
+                 <div className="space-y-2">
+                    <Label htmlFor="maxActiveContracts">Maximum Concurrent Reviews</Label>
+                    <Input id="maxActiveContracts" name="maxActiveContracts" type="number" value={formState.maxActiveContracts || ''} onChange={handleInputChange} placeholder="e.g., 5" />
+                    <p className="text-xs text-muted-foreground">Set a limit on how many contracts you review at one time.</p>
                 </div>
             </>
           )}

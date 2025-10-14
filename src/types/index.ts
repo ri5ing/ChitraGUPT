@@ -15,10 +15,13 @@ export type UserProfile = {
     aadharName?: string;
     aadharNumber?: string;
   };
+  // Auditor-specific fields
   specialization?: string[];
   experience?: number;
   certifications?: string;
   firm?: string;
+  maxActiveContracts?: number;
+  currentActiveContracts?: number;
 };
 
 export type AuditorProfile = {
@@ -28,6 +31,8 @@ export type AuditorProfile = {
     firm?: string;
     specialization?: string[];
     experience?: number;
+    maxActiveContracts?: number;
+    currentActiveContracts?: number;
 }
 
 export type Contract = {

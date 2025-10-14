@@ -26,6 +26,14 @@
         "creditBalance": {
           "type": "number",
           "description": "The user's current credit balance."
+        },
+        "maxActiveContracts": {
+          "type": "number",
+          "description": "The maximum number of contracts an auditor can review concurrently."
+        },
+        "currentActiveContracts": {
+          "type": "number",
+          "description": "The current number of active contracts an auditor is reviewing."
         }
       },
       "required": [
@@ -68,6 +76,14 @@
         "experience": {
           "type": "number",
           "description": "The auditor's years of experience."
+        },
+        "maxActiveContracts": {
+          "type": "number",
+          "description": "The maximum number of contracts an auditor can review concurrently."
+        },
+        "currentActiveContracts": {
+          "type": "number",
+          "description": "The current number of active contracts an auditor is reviewing."
         }
       },
       "required": ["id", "displayName", "avatarUrl"]

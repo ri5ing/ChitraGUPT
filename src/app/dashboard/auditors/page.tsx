@@ -14,7 +14,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Briefcase, MessageSquareQuote, Star } from 'lucide-react';
+import { Briefcase, MessageSquareQuote, Star, UserCheck, UserX } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
@@ -77,44 +77,51 @@ export default function AuditorsPage() {
 
       {!isLoading && !error && auditors && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {auditors.map((auditor) => (
-            <Card key={auditor.id} className="flex flex-col">
-              <CardHeader className="flex-row items-start gap-4">
-                <Avatar className="w-16 h-16 border-2 border-primary">
-                  <AvatarImage src={auditor.avatarUrl} alt={auditor.displayName} />
-                  <AvatarFallback>{auditor.displayName?.charAt(0)}</AvatarFallback>
-                </Avatar>
-                <div className="flex-1">
-                  <CardTitle>{auditor.displayName}</CardTitle>
-                  <CardDescription className="flex items-center gap-2 mt-1">
-                    <Briefcase className="h-4 w-4" /> {auditor.firm || 'Independent'}
-                  </CardDescription>
-                </div>
-              </CardHeader>
-              <CardContent className="flex-grow space-y-4">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
-                    <span>{auditor.experience || 'New'} years of experience</span>
-                </div>
-                 {auditor.specialization && auditor.specialization.length > 0 && (
-                    <div>
-                        <h4 className="text-sm font-semibold mb-2">Specializations</h4>
-                        <div className="flex flex-wrap gap-2">
-                        {(Array.isArray(auditor.specialization) ? auditor.specialization : [auditor.specialization]).map((spec: string) => (
-                            <Badge key={spec} variant="secondary">{spec}</Badge>
-                        ))}
-                        </div>
-                    </div>
-                )}
-              </CardContent>
-              <CardFooter>
-                <Button className="w-full">
-                  <MessageSquareQuote className="mr-2 h-4 w-4" />
-                  Request Review
-                </Button>
-              </CardFooter>
-            </Card>
-          ))}
+          {auditors.map((auditor) => {
+            const isBusy = (auditor.currentActiveContracts || 0) >= (auditor.maxActiveContracts || Infinity);
+            return (
+              <Card key={auditor.id} className="flex flex-col">
+                <CardHeader className="flex-row items-start gap-4">
+                  <Avatar className="w-16 h-16 border-2 border-primary">
+                    <AvatarImage src={auditor.avatarUrl} alt={auditor.displayName} />
+                    <AvatarFallback>{auditor.displayName?.charAt(0)}</AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1">
+                    <CardTitle>{auditor.displayName}</CardTitle>
+                    <CardDescription className="flex items-center gap-2 mt-1">
+                      <Briefcase className="h-4 w-4" /> {auditor.firm || 'Independent'}
+                    </CardDescription>
+                  </div>
+                   <Badge variant={isBusy ? 'destructive' : 'secondary'}>
+                      {isBusy ? <UserX className="mr-1 h-3 w-3" /> : <UserCheck className="mr-1 h-3 w-3" />}
+                      {isBusy ? 'Busy' : 'Available'}
+                    </Badge>
+                </CardHeader>
+                <CardContent className="flex-grow space-y-4">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
+                      <span>{auditor.experience || 'New'} years of experience</span>
+                  </div>
+                   {auditor.specialization && auditor.specialization.length > 0 && (
+                      <div>
+                          <h4 className="text-sm font-semibold mb-2">Specializations</h4>
+                          <div className="flex flex-wrap gap-2">
+                          {(Array.isArray(auditor.specialization) ? auditor.specialization : [auditor.specialization]).map((spec: string) => (
+                              <Badge key={spec} variant="secondary">{spec}</Badge>
+                          ))}
+                          </div>
+                      </div>
+                  )}
+                </CardContent>
+                <CardFooter>
+                  <Button className="w-full" disabled={isBusy}>
+                    <MessageSquareQuote className="mr-2 h-4 w-4" />
+                    Request Review
+                  </Button>
+                </CardFooter>
+              </Card>
+            )
+          })}
         </div>
       )}
        {!isLoading && !error && (!auditors || auditors.length === 0) && (
