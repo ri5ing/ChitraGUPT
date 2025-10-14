@@ -16,7 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Loader2, MessageSquareQuote, Send, User, Bot } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useCollection, useUser, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, addDoc, serverTimestamp, query, orderBy, runTransaction, doc } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, query, orderBy, runTransaction, doc, writeBatch } from 'firebase/firestore';
 import type { ChatMessage, Contract, UserProfile, AuditorProfile } from '@/types';
 import { ScrollArea } from '../ui/scroll-area';
 import { Avatar, AvatarFallback } from '../ui/avatar';
@@ -38,6 +38,9 @@ export function AuditorChatDialog({ contract, auditorProfile, clientProfile }: A
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  
+  const CHAT_COST = 3;
+  const AUDITOR_REWARD = 1;
 
   const messagesQuery = useMemoFirebase(() => {
     if (!firestore || !user || !contract.id || !contract.userId) return null;
@@ -47,8 +50,9 @@ export function AuditorChatDialog({ contract, auditorProfile, clientProfile }: A
 
   const { data: messages, isLoading: isLoadingMessages } = useCollection<ChatMessage>(messagesQuery);
   
-  const partnerProfile = user?.uid === contract.userId ? auditorProfile : clientProfile;
-  const currentUserProfile = user?.uid === contract.userId ? clientProfile : auditorProfile;
+  const isClient = user?.uid === contract.userId;
+  const partnerProfile = isClient ? auditorProfile : clientProfile;
+  const currentUserProfile = isClient ? clientProfile : auditorProfile;
 
   useEffect(() => {
     if (scrollAreaRef.current) {
@@ -65,28 +69,47 @@ export function AuditorChatDialog({ contract, auditorProfile, clientProfile }: A
 
     setIsLoading(true);
 
-    const chatPath = `users/${contract.userId}/contracts/${contract.id}/chats`;
-    const chatColRef = collection(firestore, chatPath);
-
-    const userRef = doc(firestore, 'users', user.uid);
-
     try {
-        await runTransaction(firestore, async (transaction) => {
-            const userDoc = await transaction.get(userRef);
-            if (!userDoc.exists() || userDoc.data()?.creditBalance < 1) {
-                throw new Error("Insufficient credits. Each message costs 1 credit.");
-            }
-
-            const newBalance = userDoc.data().creditBalance - 1;
-            transaction.update(userRef, { creditBalance: newBalance });
-            
-            await addDoc(chatColRef, {
-                senderId: user.uid,
-                text: input,
-                timestamp: serverTimestamp(),
-            });
-        });
+        const batch = writeBatch(firestore);
         
+        // Add new message
+        const chatPath = `users/${contract.userId}/contracts/${contract.id}/chats`;
+        const newMessageRef = doc(collection(firestore, chatPath));
+        batch.set(newMessageRef, {
+            senderId: user.uid,
+            text: input,
+            timestamp: serverTimestamp(),
+        });
+
+        // Handle credit transaction if the current user is the client
+        if (isClient) {
+            const clientRef = doc(firestore, 'users', user.uid);
+            const auditorRef = doc(firestore, 'users', contract.auditorId!);
+
+             await runTransaction(firestore, async (transaction) => {
+                const clientDoc = await transaction.get(clientRef);
+                const auditorDoc = await transaction.get(auditorRef);
+
+                if (!clientDoc.exists()) throw new Error("Client profile not found.");
+                if (!auditorDoc.exists()) throw new Error("Auditor profile not found.");
+
+                const clientBalance = clientDoc.data()?.creditBalance || 0;
+                if (clientBalance < CHAT_COST) {
+                    throw new Error(`Insufficient credits. Each message costs ${CHAT_COST} credits.`);
+                }
+                
+                // Deduct cost from client
+                const newClientBalance = clientBalance - CHAT_COST;
+                transaction.update(clientRef, { creditBalance: newClientBalance });
+
+                // Add reward to auditor
+                const auditorBalance = auditorDoc.data()?.creditBalance || 0;
+                const newAuditorBalance = auditorBalance + AUDITOR_REWARD;
+                transaction.update(auditorRef, { creditBalance: newAuditorBalance });
+             });
+        }
+        
+        await batch.commit();
         setInput('');
 
     } catch (error: any) {
@@ -105,42 +128,44 @@ export function AuditorChatDialog({ contract, auditorProfile, clientProfile }: A
   }
   
   const renderMessage = (message: ChatMessage) => {
-    const isUser = message.senderId === user?.uid;
-    const senderProfile = isUser ? currentUserProfile : partnerProfile;
+    const isCurrentUser = message.senderId === user?.uid;
+    const senderProfile = isCurrentUser ? currentUserProfile : partnerProfile;
 
     return (
       <div
         key={message.id}
-        className={cn('flex items-start gap-3', isUser && 'flex-row-reverse')}
+        className={cn('flex items-start gap-3', isCurrentUser && 'flex-row-reverse')}
       >
-        <Avatar className={cn("w-8 h-8 border", isUser ? 'bg-accent text-accent-foreground' : 'bg-primary text-primary-foreground')}>
+        <Avatar className={cn("w-8 h-8 border", isCurrentUser ? 'bg-accent text-accent-foreground' : 'bg-primary text-primary-foreground')}>
           <AvatarFallback>{getAvatarFallback(senderProfile)}</AvatarFallback>
         </Avatar>
         <div
           className={cn(
             'p-3 rounded-lg text-sm max-w-[85%]',
-            isUser ? 'bg-accent text-accent-foreground' : 'bg-muted'
+            isCurrentUser ? 'bg-accent text-accent-foreground' : 'bg-muted'
           )}
         >
           <p>{message.text}</p>
-          <p className={cn("text-xs mt-1", isUser ? "text-accent-foreground/70" : "text-muted-foreground/70")}>
+          <p className={cn("text-xs mt-1", isCurrentUser ? "text-accent-foreground/70" : "text-muted-foreground/70")}>
             {message.timestamp ? format(message.timestamp.toDate(), 'p', { locale: enIN }) : 'sending...'}
           </p>
         </div>
       </div>
     );
   }
+  
+  const inputPlaceholder = isClient ? `Type your message... (${CHAT_COST} credits)` : 'Type your message...';
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button variant="secondary" className="mt-4">
-            <MessageSquareQuote className="mr-2 h-4 w-4" /> Chat with Auditor
+            <MessageSquareQuote className="mr-2 h-4 w-4" /> Chat with {isClient ? 'Auditor' : 'Client'}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-lg h-[70vh] flex flex-col">
         <DialogHeader>
-          <DialogTitle>Chat with {partnerProfile?.displayName || 'Auditor'}</DialogTitle>
+          <DialogTitle>Chat with {partnerProfile?.displayName || (isClient ? 'Auditor' : 'Client')}</DialogTitle>
           <DialogDescription>
             Discuss the contract: {contract.title}
           </DialogDescription>
@@ -172,7 +197,7 @@ export function AuditorChatDialog({ contract, auditorProfile, clientProfile }: A
             <Input
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Type your message... (1 credit)"
+              placeholder={inputPlaceholder}
               disabled={isLoading || isUserLoading}
             />
             <Button type="submit" size="icon" disabled={isLoading || isUserLoading}>

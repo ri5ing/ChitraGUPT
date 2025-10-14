@@ -70,7 +70,7 @@ export default function AllContractsPage() {
   };
 
   const handleToggleRow = (contractId: string) => {
-    setExpandedContractId(prevId => prevId === contractId ? null : contractId);
+    setExpandedContractId(prevId => prevId === contractId ? null : prevId);
   };
   
   const handleDeleteContract = async (contractId: string) => {
