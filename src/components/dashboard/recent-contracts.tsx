@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState } from "react";
@@ -94,9 +95,8 @@ export function RecentContracts() {
             <TableRow>
               <TableHead>Contract Title</TableHead>
               <TableHead className="hidden md:table-cell">Uploaded</TableHead>
-              <TableHead className="text-right">Status</TableHead>
-              <TableHead className="w-[100px]"></TableHead>
-              <TableHead className="w-[50px]"></TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -104,9 +104,11 @@ export function RecentContracts() {
               <TableRow key={i}>
                 <TableCell><Skeleton className="h-5 w-32" /></TableCell>
                 <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-20" /></TableCell>
-                <TableCell className="text-right"><Skeleton className="h-6 w-20 ml-auto" /></TableCell>
-                <TableCell className="text-right"><Skeleton className="h-8 w-[70px]" /></TableCell>
-                <TableCell></TableCell>
+                <TableCell><Skeleton className="h-6 w-20" /></TableCell>
+                <TableCell className="text-right space-x-2">
+                    <Skeleton className="h-8 w-[70px] inline-block" />
+                    <Skeleton className="h-8 w-8 inline-block" />
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -178,7 +180,7 @@ export function RecentContracts() {
               </TableRow>
               {expandedContractId === contract.id && (
                 <TableRow>
-                  <TableCell colSpan={5}>
+                  <TableCell colSpan={4}>
                     <div className="p-4 bg-muted/50 rounded-lg">
                       <ContractAnalysis contract={contract} />
                     </div>
@@ -202,7 +204,7 @@ export function RecentContracts() {
           </CardDescription>
         </div>
         <Button variant="ghost" asChild>
-            <Link href="#">View All <ArrowRight className="ml-2 h-4 w-4" /></Link>
+            <Link href="/dashboard/contracts">View All <ArrowRight className="ml-2 h-4 w-4" /></Link>
         </Button>
       </CardHeader>
       <CardContent>
