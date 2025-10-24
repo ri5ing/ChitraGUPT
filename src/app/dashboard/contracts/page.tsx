@@ -70,7 +70,7 @@ export default function AllContractsPage() {
   };
 
   const handleToggleRow = (contractId: string) => {
-    setExpandedContractId(prevId => prevId === contractId ? null : prevId);
+    setExpandedContractId(prevId => prevId === contractId ? null : contractId);
   };
   
   const handleDeleteContract = async (contractId: string) => {
@@ -159,7 +159,7 @@ export default function AllContractsPage() {
           </TableRow>
           {expandedContractId === contract.id && (
             <TableRow>
-              <TableCell colSpan={5}>
+              <TableCell colSpan={4}>
                 <div className="p-4 bg-muted/50 rounded-lg">
                   <ContractAnalysis contract={contract} />
                 </div>
