@@ -28,6 +28,7 @@ import {
   BrainCircuit,
   AlertTriangle,
   FileWarning,
+  FileJson,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { enIN } from 'date-fns/locale';
@@ -73,7 +74,8 @@ function PublicReportSkeleton() {
                     <div className="animate-pulse bg-muted h-4 w-1/2 rounded-md mt-2"></div>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div className="animate-pulse bg-muted h-24 rounded-md"></div>
                         <div className="animate-pulse bg-muted h-24 rounded-md"></div>
                         <div className="animate-pulse bg-muted h-24 rounded-md"></div>
                         <div className="animate-pulse bg-muted h-24 rounded-md"></div>
@@ -159,7 +161,7 @@ export default function PublicReportPage() {
                 </CardHeader>
                 <CardContent>
                     <div className='space-y-6'>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                             <Card>
                                 <CardHeader className="pb-2">
                                     <CardTitle className="text-sm font-medium">Risk Score</CardTitle>
@@ -185,6 +187,14 @@ export default function PublicReportPage() {
                                     <Badge className={cn("text-base", getSeverityBadgeClass(analysis.documentSeverity))}>
                                         {analysis.documentSeverity ?? 'N/A'}
                                     </Badge>
+                                </CardContent>
+                            </Card>
+                            <Card>
+                                <CardHeader className="pb-2">
+                                    <CardTitle className="text-sm font-medium flex items-center gap-2"><FileJson size={16}/> Contract Type</CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="font-semibold text-lg">{analysis.contractType ?? 'N/A'}</div>
                                 </CardContent>
                             </Card>
                         </div>

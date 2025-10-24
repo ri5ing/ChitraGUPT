@@ -66,6 +66,7 @@ export type AIAnalysisReport = {
   riskScore: number;
   aiConfidenceScore: number;
   documentSeverity: 'Low' | 'Medium' | 'High' | 'Critical';
+  contractType: string;
 };
 
 export type AuditorFeedback = {
