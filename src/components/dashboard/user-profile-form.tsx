@@ -42,6 +42,7 @@ export function UserProfileForm() {
     const { toast } = useToast();
     const [isLoading, setIsLoading] = useState(false);
     const [formState, setFormState] = useState<Partial<UserProfile>>({});
+    const [otherSpecialization, setOtherSpecialization] = useState('');
 
     const userProfileRef = useMemoFirebase(() => {
         if (!user) return null;
@@ -53,6 +54,20 @@ export function UserProfileForm() {
     useEffect(() => {
         if (userProfile) {
             setFormState(userProfile);
+            // Initialize 'other' text if it exists
+            const otherSpec = userProfile.specialization?.find(s => 
+                !specializationOptions.some(opt => opt.value === s && s !== 'Other')
+            );
+            if (otherSpec) {
+                setOtherSpecialization(otherSpec);
+                // Ensure 'Other' is in the selection if a custom value exists
+                if (!userProfile.specialization?.includes('Other')) {
+                    setFormState(prev => ({
+                        ...prev,
+                        specialization: [...(prev.specialization || []), 'Other']
+                    }));
+                }
+            }
         }
     }, [userProfile]);
 
@@ -63,6 +78,9 @@ export function UserProfileForm() {
 
     const handleSpecializationChange = (selected: string[]) => {
         setFormState(prev => ({ ...prev, specialization: selected }));
+        if (!selected.includes('Other')) {
+            setOtherSpecialization('');
+        }
     }
 
     const handleFormSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -70,8 +88,17 @@ export function UserProfileForm() {
         if (!user || !userProfile) return;
 
         setIsLoading(true);
+
+        const finalSpecializations = formState.specialization?.map(s => {
+            if (s === 'Other' && otherSpecialization.trim() !== '') {
+                return otherSpecialization.trim();
+            }
+            return s;
+        }).filter(s => s !== 'Other'); // remove 'Other' placeholder
+
         const updateData: Partial<UserProfile> = {
             ...formState,
+            specialization: finalSpecializations,
             maxActiveContracts: Number(formState.maxActiveContracts) || 0,
             experience: Number(formState.experience) || 0,
         }
@@ -209,6 +236,18 @@ export function UserProfileForm() {
                         className="w-full"
                     />
                 </div>
+                {formState.specialization?.includes('Other') && (
+                    <div className="space-y-2 pl-1 pt-2">
+                        <Label htmlFor="otherSpecialization">If other, please specify</Label>
+                        <Input 
+                            id="otherSpecialization" 
+                            name="otherSpecialization" 
+                            value={otherSpecialization} 
+                            onChange={(e) => setOtherSpecialization(e.target.value)}
+                            placeholder="e.g., Blockchain Law"
+                        />
+                    </div>
+                )}
                  <div className="space-y-2">
                     <Label htmlFor="maxActiveContracts">Maximum Concurrent Reviews</Label>
                     <Input id="maxActiveContracts" name="maxActiveContracts" type="number" value={formState.maxActiveContracts || ''} onChange={handleInputChange} placeholder="e.g., 5" />
