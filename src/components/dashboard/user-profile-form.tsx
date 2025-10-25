@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2 } from 'lucide-react';
+import { Loader2, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
 import { doc, writeBatch } from 'firebase/firestore';
@@ -22,6 +22,7 @@ import { useEffect, useState } from 'react';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 import { AlertCircle } from 'lucide-react';
 import { Separator } from '../ui/separator';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 
 const specializationOptions: MultiSelectOption[] = [
     { value: 'Corporate Law', label: 'Corporate Law' },
@@ -54,18 +55,31 @@ export function UserProfileForm() {
     useEffect(() => {
         if (userProfile) {
             setFormState(userProfile);
-            // Initialize 'other' text if it exists
-            const otherSpec = userProfile.specialization?.find(s => 
-                !specializationOptions.some(opt => opt.value === s && s !== 'Other')
+            
+            // Check if there's a specialization that isn't one of the predefined options
+            const customSpec = userProfile.specialization?.find(s => 
+                !specializationOptions.some(opt => opt.value === s)
             );
-            if (otherSpec) {
-                setOtherSpecialization(otherSpec);
-                // Ensure 'Other' is in the selection if a custom value exists
+
+            if (customSpec) {
+                // This is our custom "Other" value
+                setOtherSpecialization(customSpec);
+
+                // Ensure 'Other' is added to the selection to show the input box,
+                // and the custom value itself is removed from the selection array
+                // to avoid it being displayed as a badge.
+                const newSpecializations = (userProfile.specialization || []).filter(s => s !== customSpec);
+                if (!newSpecializations.includes('Other')) {
+                    newSpecializations.push('Other');
+                }
+                 setFormState(prev => ({ ...prev, specialization: newSpecializations }));
+
+            } else {
+                // If no custom spec, but 'Other' is selected, it means it was just checked
+                // without filling the text yet, so we don't need to do anything special.
+                // If 'Other' is not selected, clear the text field.
                 if (!userProfile.specialization?.includes('Other')) {
-                    setFormState(prev => ({
-                        ...prev,
-                        specialization: [...(prev.specialization || []), 'Other']
-                    }));
+                    setOtherSpecialization('');
                 }
             }
         }
@@ -78,9 +92,14 @@ export function UserProfileForm() {
 
     const handleSpecializationChange = (selected: string[]) => {
         setFormState(prev => ({ ...prev, specialization: selected }));
+        // If 'Other' is deselected, clear the custom text
         if (!selected.includes('Other')) {
             setOtherSpecialization('');
         }
+    }
+    
+    const clearSpecializations = () => {
+        handleSpecializationChange([]);
     }
 
     const handleFormSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -89,12 +108,13 @@ export function UserProfileForm() {
 
         setIsLoading(true);
 
-        const finalSpecializations = formState.specialization?.map(s => {
-            if (s === 'Other' && otherSpecialization.trim() !== '') {
-                return otherSpecialization.trim();
-            }
-            return s;
-        }).filter(s => s !== 'Other'); // remove 'Other' placeholder
+        // Start with the selected specializations, but remove the 'Other' placeholder
+        let finalSpecializations = (formState.specialization || []).filter(s => s !== 'Other');
+
+        // If 'Other' was selected and the text input has a value, add it
+        if (formState.specialization?.includes('Other') && otherSpecialization.trim() !== '') {
+            finalSpecializations.push(otherSpecialization.trim());
+        }
 
         const updateData: Partial<UserProfile> = {
             ...formState,
@@ -228,13 +248,27 @@ export function UserProfileForm() {
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="specialization">Specialization</Label>
-                    <MultiSelect
-                        options={specializationOptions}
-                        selected={formState.specialization || []}
-                        onChange={handleSpecializationChange}
-                        placeholder="Select your areas of expertise..."
-                        className="w-full"
-                    />
+                    <div className="flex items-center gap-2">
+                        <MultiSelect
+                            options={specializationOptions}
+                            selected={formState.specialization || []}
+                            onChange={handleSpecializationChange}
+                            placeholder="Select your areas of expertise..."
+                            className="w-full"
+                        />
+                         <TooltipProvider>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button type="button" variant="ghost" size="icon" onClick={clearSpecializations} disabled={(formState.specialization || []).length === 0}>
+                                        <X className="h-4 w-4" />
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>Clear selection</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
+                    </div>
                 </div>
                 {formState.specialization?.includes('Other') && (
                     <div className="space-y-2 pl-1 pt-2">
