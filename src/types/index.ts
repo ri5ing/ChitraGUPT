@@ -46,9 +46,9 @@ export type Contract = {
   aiAnalysis?: AIAnalysisReport;
   auditorFeedback?: AuditorFeedback[];
   finalFeedback?: AuditorFeedback;
-  auditorId?: string;
+  auditorIds?: string[];
   publicReportId?: string;
-  reviewRequestId?: string;
+  reviewRequestIds?: string[];
 };
 
 export type PublicContractReport = {
@@ -85,6 +85,8 @@ export type AuditorFeedback = {
 export type ChatMessage = {
   id: string;
   senderId: string;
+  senderName: string;
+  senderAvatarUrl: string;
   text: string;
   timestamp: Timestamp;
 };

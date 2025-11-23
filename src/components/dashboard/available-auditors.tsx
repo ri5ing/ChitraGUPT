@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -11,9 +11,9 @@ import {
 } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { useUser, useFirestore, useCollection, useMemoFirebase, useDoc } from '@/firebase';
-import { collection, query, doc, updateDoc, addDoc, serverTimestamp, writeBatch } from 'firebase/firestore';
+import { collection, query, doc, updateDoc, addDoc, serverTimestamp, writeBatch, arrayUnion } from 'firebase/firestore';
 import type { AuditorProfile, Contract, UserProfile } from '@/types';
-import { Loader2, MessageSquareQuote, Send, Star } from 'lucide-react';
+import { Loader2, MessageSquareQuote, Send, Star, UserPlus } from 'lucide-react';
 import { ScrollArea } from '../ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Badge } from '../ui/badge';
@@ -24,9 +24,10 @@ import { RequestReviewDialog } from './request-review-dialog';
 
 type AvailableAuditorsProps = {
   contract: Contract;
+  buttonContent: ReactNode;
 };
 
-export function AvailableAuditors({ contract }: AvailableAuditorsProps) {
+export function AvailableAuditors({ contract, buttonContent }: AvailableAuditorsProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedAuditorId, setSelectedAuditorId] = useState<string | null>(null);
   const { toast } = useToast();
@@ -46,56 +47,6 @@ export function AvailableAuditors({ contract }: AvailableAuditorsProps) {
   }, [firestore]);
 
   const { data: auditors, isLoading: isLoadingAuditors, error } = useCollection<AuditorProfile>(auditorsQuery);
-
-  const handleSendRequest = async (auditor: AuditorProfile) => {
-    if (!user || !currentUserProfile) {
-      toast({ variant: 'destructive', title: 'Error', description: 'You are not logged in.' });
-      return;
-    }
-    setSelectedAuditorId(auditor.id);
-    setIsLoading(true);
-    
-    try {
-      const batch = writeBatch(firestore);
-
-      // 1. Update the original contract status and auditorId
-      const contractRef = doc(firestore, 'users', user.uid, 'contracts', contract.id);
-      batch.update(contractRef, {
-        status: 'In Review',
-        auditorId: auditor.id
-      });
-
-      // 2. Create a new document in the `reviewRequests` collection
-      const reviewRequestRef = doc(collection(firestore, 'reviewRequests'));
-      batch.set(reviewRequestRef, {
-        contractId: contract.id,
-        contractTitle: contract.title,
-        contractUserId: contract.userId,
-        clientId: user.uid,
-        clientName: currentUserProfile.displayName || user.email,
-        auditorId: auditor.id,
-        status: 'pending',
-        requestDate: serverTimestamp(),
-      });
-
-      await batch.commit();
-
-      toast({
-        title: 'Request Sent',
-        description: `Your review request has been sent to ${auditor.displayName}.`,
-      });
-    } catch (error: any) {
-      console.error("Error sending review request:", error);
-      toast({
-        variant: 'destructive',
-        title: 'Failed to send request',
-        description: error.message,
-      });
-    } finally {
-      setIsLoading(false);
-      setSelectedAuditorId(null);
-    }
-  };
 
   const renderContent = () => {
     if (isLoadingAuditors) {
@@ -132,9 +83,14 @@ export function AvailableAuditors({ contract }: AvailableAuditorsProps) {
     }
 
     if (auditors && auditors.length > 0) {
+      const availableAuditors = auditors.filter(auditor => !contract.auditorIds?.includes(auditor.id));
+      if (availableAuditors.length === 0) {
+        return <p className="text-center text-muted-foreground py-10">All available auditors have been added.</p>;
+      }
+
       return (
         <div className="space-y-4">
-          {auditors.map((auditor) => (
+          {availableAuditors.map((auditor) => (
             <Card key={auditor.id} className="w-full text-left">
               <CardHeader className="pb-4">
                 <div className="flex items-start gap-4">
@@ -162,8 +118,8 @@ export function AvailableAuditors({ contract }: AvailableAuditorsProps) {
                 </div>
                 <RequestReviewDialog contract={contract} auditor={auditor} currentUserProfile={currentUserProfile}>
                   <Button className="w-full" size="sm">
-                    <MessageSquareQuote className="mr-2 h-4 w-4" />
-                    Request Review
+                    <UserPlus className="mr-2 h-4 w-4" />
+                    Add Auditor to Review
                   </Button>
                 </RequestReviewDialog>
               </CardContent>
@@ -175,6 +131,8 @@ export function AvailableAuditors({ contract }: AvailableAuditorsProps) {
 
     return <p className="text-center text-muted-foreground py-10">No auditors found.</p>;
   }
+  
+  if (contract.status === 'Completed') return null;
 
   return (
     <Card className="sticky top-20">

@@ -24,7 +24,6 @@ import {
   GanttChartSquare,
   ListChecks,
   ShieldAlert,
-  VenetianMask,
   Bot,
   MessageSquareQuote,
   Users,
@@ -36,14 +35,15 @@ import {
   ThumbsUp,
   ThumbsDown,
   Loader2,
+  UserPlus,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { enIN } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { ChatDialog } from '../chitragupt-guide/chat-dialog';
 import { AuditorChatDialog } from './auditor-chat-dialog';
-import { useDoc, useFirestore, useMemoFirebase, useUser } from '@/firebase';
-import { doc, increment, writeBatch } from 'firebase/firestore';
+import { useCollection, useDoc, useFirestore, useMemoFirebase, useUser } from '@/firebase';
+import { collection, doc, increment, writeBatch, arrayUnion } from 'firebase/firestore';
 import { AvailableAuditors } from './available-auditors';
 import { ShareReportButton } from './share-report-button';
 import { useState } from 'react';
@@ -115,47 +115,60 @@ export function ContractAnalysis({ contract }: ContractAnalysisProps) {
   const missingClausesPoints = ensureArray(analysis?.missingClauses);
   const recommendationsPoints = ensureArray(analysis?.recommendations);
 
-  const auditorRef = useMemoFirebase(() => 
-    contract.auditorId ? doc(firestore, 'auditors', contract.auditorId) : null, 
-  [firestore, contract.auditorId]);
+  const auditorsQuery = useMemoFirebase(() => {
+    if (!firestore || !contract.auditorIds || contract.auditorIds.length === 0) return null;
+    return collection(firestore, 'users'); // We will filter on the client side
+  }, [firestore, contract.auditorIds]);
+
+  const { data: allAuditors } = useCollection<UserProfile>(auditorsQuery);
+
+  const auditorProfiles = useMemo(() => {
+    if (!allAuditors || !contract.auditorIds) return [];
+    return allAuditors.filter(auditor => contract.auditorIds!.includes(auditor.id));
+  }, [allAuditors, contract.auditorIds]);
+
 
   const clientRef = useMemoFirebase(() => 
     doc(firestore, 'users', contract.userId),
   [firestore, contract.userId]);
 
-  const { data: auditorProfile } = useDoc<AuditorProfile>(auditorRef);
   const { data: clientProfile } = useDoc<UserProfile>(clientRef);
   
   const isClientOwner = user?.uid === contract.userId;
 
   const handleClientApproval = async (decision: 'completed' | 'in_review') => {
-    if (!user || !contract.auditorId) return;
+    if (!user || !contract.auditorIds) return;
     setIsUpdating(true);
 
     try {
         const batch = writeBatch(firestore);
 
         const contractRef = doc(firestore, 'users', user.uid, 'contracts', contract.id);
-        const auditorUserRef = doc(firestore, 'users', contract.auditorId);
-        const auditorPublicRef = doc(firestore, 'auditors', contract.auditorId);
-
+        
         if (decision === 'completed') {
             batch.update(contractRef, { status: 'Completed' });
-            // The auditor's work is now officially done.
-            batch.update(auditorUserRef, { currentActiveContracts: increment(-1) });
-            batch.update(auditorPublicRef, { currentActiveContracts: increment(-1) });
             
-            // Delete the temporary review request
-            if(contract.reviewRequestId) {
-                const requestRef = doc(firestore, 'reviewRequests', contract.reviewRequestId);
-                batch.delete(requestRef);
+            // The auditor's work is now officially done.
+            for (const auditorId of contract.auditorIds) {
+                const auditorUserRef = doc(firestore, 'users', auditorId);
+                const auditorPublicRef = doc(firestore, 'auditors', auditorId);
+                batch.update(auditorUserRef, { currentActiveContracts: increment(-1) });
+                batch.update(auditorPublicRef, { currentActiveContracts: increment(-1) });
+            }
+            
+            // Delete the temporary review requests
+            if(contract.reviewRequestIds) {
+                for(const requestId of contract.reviewRequestIds) {
+                    const requestRef = doc(firestore, 'reviewRequests', requestId);
+                    batch.delete(requestRef);
+                }
             }
 
             toast({ title: 'Review Approved', description: 'The contract has been marked as completed.' });
 
         } else { // Requesting revisions
             batch.update(contractRef, { status: 'In Review' });
-            toast({ title: 'Revisions Requested', description: 'The contract has been sent back to the auditor for revisions.' });
+            toast({ title: 'Revisions Requested', description: 'The contract has been sent back to the auditors for revisions.' });
         }
 
         await batch.commit();
@@ -298,16 +311,18 @@ export function ContractAnalysis({ contract }: ContractAnalysisProps) {
                            <CheckCircle className="h-6 w-6 text-green-600" />
                            <h4 className="font-semibold text-lg">Review Completed</h4>
                         </div>
-                        <div className="flex items-center gap-4">
-                            <Avatar className="w-12 h-12">
-                                <AvatarImage src={contract.finalFeedback.auditorAvatarUrl} />
-                                <AvatarFallback>{contract.finalFeedback.auditorName?.slice(0,2)}</AvatarFallback>
-                            </Avatar>
-                            <div>
-                                <p className="font-semibold">{contract.finalFeedback.auditorName}</p>
-                                <p className="text-sm text-muted-foreground">{format(contract.finalFeedback.timestamp.toDate(), 'PPP')}</p>
+                         {auditorProfiles.map(profile => (
+                            <div key={profile.id} className="flex items-center gap-4">
+                                <Avatar className="w-12 h-12">
+                                    <AvatarImage src={profile.avatarUrl} />
+                                    <AvatarFallback>{profile.displayName?.slice(0,2)}</AvatarFallback>
+                                </Avatar>
+                                <div>
+                                    <p className="font-semibold">{profile.displayName}</p>
+                                    <p className="text-sm text-muted-foreground">{profile.firm || 'Independent'}</p>
+                                </div>
                             </div>
-                        </div>
+                        ))}
                         <div>
                             <p className='text-sm font-semibold'>Final Verdict</p>
                              <Badge className={cn('mt-1', getVerdictBadgeClass(contract.finalFeedback.verdict))}>{contract.finalFeedback.verdict}</Badge>
@@ -317,28 +332,38 @@ export function ContractAnalysis({ contract }: ContractAnalysisProps) {
                             <p className='text-sm text-muted-foreground p-3 mt-1 bg-background rounded-md border'>{contract.finalFeedback.feedback}</p>
                         </div>
                     </div>
-                ) : (contract.status === 'Pending Approval' || contract.status === 'In Review') && contract.auditorId && auditorProfile ? (
+                ) : (contract.status === 'Pending Approval' || contract.status === 'In Review') && contract.auditorIds && contract.auditorIds.length > 0 ? (
                   <>
                   <div className="p-4 rounded-lg border bg-secondary/50">
-                    <h4 className="font-semibold mb-2">Auditor Assigned</h4>
-                    <div className="flex items-center gap-4">
-                        <Avatar className="w-12 h-12">
-                            <AvatarImage src={auditorProfile.avatarUrl} />
-                            <AvatarFallback>{auditorProfile.displayName?.slice(0,2)}</AvatarFallback>
-                        </Avatar>
-                        <div>
-                            <p className="font-semibold">{auditorProfile.displayName}</p>
-                            <p className="text-sm text-muted-foreground">{auditorProfile.firm || 'Independent'}</p>
-                        </div>
+                    <h4 className="font-semibold mb-2">Assigned Auditors</h4>
+                    <div className='space-y-3'>
+                    {auditorProfiles.map(profile => (
+                      <div key={profile.id} className="flex items-center gap-4">
+                          <Avatar className="w-10 h-10">
+                              <AvatarImage src={profile.avatarUrl} />
+                              <AvatarFallback>{profile.displayName?.slice(0,2)}</AvatarFallback>
+                          </Avatar>
+                          <div>
+                              <p className="font-semibold text-sm">{profile.displayName}</p>
+                              <p className="text-xs text-muted-foreground">{profile.firm || 'Independent'}</p>
+                          </div>
+                      </div>
+                    ))}
                     </div>
                   </div>
-                    {contract.status === 'In Review' && <div className="text-center py-6 text-muted-foreground">Awaiting feedback from {auditorProfile.displayName}.</div>}
-                    {clientProfile && auditorProfile && (
-                      <AuditorChatDialog contract={contract} auditorProfile={auditorProfile} clientProfile={clientProfile} />
+                    {isClientOwner && (
+                        <div className="text-center text-sm p-2 rounded-md bg-blue-50 border border-blue-200 text-blue-800">
+                            <p>You can add more auditors to this review.</p>
+                             <AvailableAuditors contract={contract} buttonContent={<><UserPlus className="mr-2 h-4 w-4"/>Add Another Auditor</>} />
+                        </div>
+                    )}
+                    {contract.status === 'In Review' && <div className="text-center py-6 text-muted-foreground">Awaiting feedback from the review team.</div>}
+                    {clientProfile && auditorProfiles.length > 0 && (
+                      <AuditorChatDialog contract={contract} auditorProfiles={auditorProfiles} clientProfile={clientProfile} />
                     )}
                   </>
                 ) : (
-                  <AvailableAuditors contract={contract} />
+                  <AvailableAuditors contract={contract} buttonContent={<><UserPlus className="mr-2 h-4 w-4"/>Request First Review</>} />
                 )}
                 
                 {isClientOwner && contract.status === 'Pending Approval' && contract.finalFeedback && (

@@ -52,6 +52,10 @@ service cloud.firestore {
     function isAssignedAuditor(auditorId) {
         return request.auth.uid == auditorId;
     }
+
+    function isOneOfAssignedAuditors(auditorIds) {
+        return request.auth.uid in auditorIds;
+    }
     
     function isRequestingClient(clientId) {
         return request.auth.uid == clientId;
@@ -81,10 +85,9 @@ service cloud.firestore {
      * @path /users/{userId}/contracts/{contractId}
      */
     match /users/{userId}/contracts/{contractId} {
-      allow get, list: if isOwner(userId);
+      allow get, list: if isOwner(userId) || isOneOfAssignedAuditors(resource.data.auditorIds);
       allow create: if isOwner(userId) && request.resource.data.userId == userId;
-      // Allow auditor to update status/feedback, but client can update title etc.
-      allow update: if isOwner(userId) || isAssignedAuditor(resource.data.auditorId);
+      allow update: if isOwner(userId) || isOneOfAssignedAuditors(resource.data.auditorIds);
       allow delete: if isOwner(userId);
     }
 
@@ -124,10 +127,10 @@ service cloud.firestore {
      * @path /users/{userId}/contracts/{contractId}/chats/{messageId}
      */
     match /users/{userId}/contracts/{contractId}/chats/{messageId} {
-      // The client who owns the contract, or the assigned auditor can read/write chat messages.
+      // The client who owns the contract, or any of the assigned auditors can read/write chat messages.
       function isParticipant() {
         let contract = get(/databases/$(database)/documents/users/$(userId)/contracts/$(contractId));
-        return isOwner(userId) || isAssignedAuditor(contract.data.auditorId);
+        return isOwner(userId) || isOneOfAssignedAuditors(contract.data.auditorIds);
       }
 
       allow get, list, create: if isParticipant();

@@ -10,27 +10,26 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-  DialogFooter,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { Loader2, MessageSquareQuote, Send, User, Bot } from 'lucide-react';
+import { Loader2, MessageSquareQuote, Send } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useCollection, useUser, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, addDoc, serverTimestamp, query, orderBy, runTransaction, doc, writeBatch } from 'firebase/firestore';
-import type { ChatMessage, Contract, UserProfile, AuditorProfile } from '@/types';
+import type { ChatMessage, Contract, UserProfile } from '@/types';
 import { ScrollArea } from '../ui/scroll-area';
-import { Avatar, AvatarFallback } from '../ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { enIN } from 'date-fns/locale';
 
 type AuditorChatDialogProps = {
   contract: Contract;
-  auditorProfile: AuditorProfile | null;
   clientProfile: UserProfile | null;
+  auditorProfiles: UserProfile[];
 };
 
-export function AuditorChatDialog({ contract, auditorProfile, clientProfile }: AuditorChatDialogProps) {
+export function AuditorChatDialog({ contract, clientProfile, auditorProfiles }: AuditorChatDialogProps) {
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [input, setInput] = useState('');
@@ -51,8 +50,7 @@ export function AuditorChatDialog({ contract, auditorProfile, clientProfile }: A
   const { data: messages, isLoading: isLoadingMessages } = useCollection<ChatMessage>(messagesQuery);
   
   const isClient = user?.uid === contract.userId;
-  const partnerProfile = isClient ? auditorProfile : clientProfile;
-  const currentUserProfile = isClient ? clientProfile : auditorProfile;
+  const currentUserProfile = isClient ? clientProfile : auditorProfiles.find(p => p.id === user?.uid);
 
   useEffect(() => {
     if (scrollAreaRef.current) {
@@ -65,7 +63,7 @@ export function AuditorChatDialog({ contract, auditorProfile, clientProfile }: A
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!input.trim() || !user || !contract.userId || !contract.id) return;
+    if (!input.trim() || !user || !contract.userId || !contract.id || !currentUserProfile) return;
 
     setIsLoading(true);
 
@@ -77,6 +75,8 @@ export function AuditorChatDialog({ contract, auditorProfile, clientProfile }: A
         const newMessageRef = doc(collection(firestore, chatPath));
         batch.set(newMessageRef, {
             senderId: user.uid,
+            senderName: currentUserProfile.displayName || currentUserProfile.email,
+            senderAvatarUrl: currentUserProfile.avatarUrl,
             text: input,
             timestamp: serverTimestamp(),
         });
@@ -84,14 +84,11 @@ export function AuditorChatDialog({ contract, auditorProfile, clientProfile }: A
         // Handle credit transaction if the current user is the client
         if (isClient) {
             const clientRef = doc(firestore, 'users', user.uid);
-            const auditorRef = doc(firestore, 'users', contract.auditorId!);
-
+            
              await runTransaction(firestore, async (transaction) => {
                 const clientDoc = await transaction.get(clientRef);
-                const auditorDoc = await transaction.get(auditorRef);
 
                 if (!clientDoc.exists()) throw new Error("Client profile not found.");
-                if (!auditorDoc.exists()) throw new Error("Auditor profile not found.");
 
                 const clientBalance = clientDoc.data()?.creditBalance || 0;
                 if (clientBalance < CHAT_COST) {
@@ -102,10 +99,18 @@ export function AuditorChatDialog({ contract, auditorProfile, clientProfile }: A
                 const newClientBalance = clientBalance - CHAT_COST;
                 transaction.update(clientRef, { creditBalance: newClientBalance });
 
-                // Add reward to auditor
-                const auditorBalance = auditorDoc.data()?.creditBalance || 0;
-                const newAuditorBalance = auditorBalance + AUDITOR_REWARD;
-                transaction.update(auditorRef, { creditBalance: newAuditorBalance });
+                // Distribute reward to auditors
+                if (contract.auditorIds) {
+                    for (const auditorId of contract.auditorIds) {
+                        const auditorRef = doc(firestore, 'users', auditorId);
+                        const auditorDoc = await transaction.get(auditorRef);
+                        if (auditorDoc.exists()) {
+                            const auditorBalance = auditorDoc.data()?.creditBalance || 0;
+                            const newAuditorBalance = auditorBalance + AUDITOR_REWARD;
+                            transaction.update(auditorRef, { creditBalance: newAuditorBalance });
+                        }
+                    }
+                }
              });
         }
         
@@ -123,13 +128,8 @@ export function AuditorChatDialog({ contract, auditorProfile, clientProfile }: A
     }
   };
   
-  const getAvatarFallback = (profile: UserProfile | AuditorProfile | null) => {
-    return profile?.displayName?.charAt(0) || (profile as UserProfile)?.email?.charAt(0) || '?';
-  }
-  
   const renderMessage = (message: ChatMessage) => {
     const isCurrentUser = message.senderId === user?.uid;
-    const senderProfile = isCurrentUser ? currentUserProfile : partnerProfile;
 
     return (
       <div
@@ -137,7 +137,8 @@ export function AuditorChatDialog({ contract, auditorProfile, clientProfile }: A
         className={cn('flex items-start gap-3', isCurrentUser && 'flex-row-reverse')}
       >
         <Avatar className={cn("w-8 h-8 border", isCurrentUser ? 'bg-accent text-accent-foreground' : 'bg-primary text-primary-foreground')}>
-          <AvatarFallback>{getAvatarFallback(senderProfile)}</AvatarFallback>
+          <AvatarImage src={message.senderAvatarUrl} alt={message.senderName}/>
+          <AvatarFallback>{message.senderName?.charAt(0) || '?'}</AvatarFallback>
         </Avatar>
         <div
           className={cn(
@@ -145,6 +146,7 @@ export function AuditorChatDialog({ contract, auditorProfile, clientProfile }: A
             isCurrentUser ? 'bg-accent text-accent-foreground' : 'bg-muted'
           )}
         >
+          {!isCurrentUser && <p className="font-semibold text-xs mb-1">{message.senderName}</p>}
           <p>{message.text}</p>
           <p className={cn("text-xs mt-1", isCurrentUser ? "text-accent-foreground/70" : "text-muted-foreground/70")}>
             {message.timestamp ? format(message.timestamp.toDate(), 'p', { locale: enIN }) : 'sending...'}
@@ -159,13 +161,13 @@ export function AuditorChatDialog({ contract, auditorProfile, clientProfile }: A
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="secondary" className="mt-4">
-            <MessageSquareQuote className="mr-2 h-4 w-4" /> Chat with {isClient ? 'Auditor' : 'Client'}
+        <Button variant="secondary" className="mt-4 w-full">
+            <MessageSquareQuote className="mr-2 h-4 w-4" /> Chat with Review Team
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-lg h-[70vh] flex flex-col">
         <DialogHeader>
-          <DialogTitle>Chat with {partnerProfile?.displayName || (isClient ? 'Auditor' : 'Client')}</DialogTitle>
+          <DialogTitle>Contract War Room</DialogTitle>
           <DialogDescription>
             Discuss the contract: {contract.title}
           </DialogDescription>
@@ -179,10 +181,11 @@ export function AuditorChatDialog({ contract, auditorProfile, clientProfile }: A
             ) : (
                 <div className="text-center text-muted-foreground p-8">No messages yet. Start the conversation!</div>
             )}
-             {isLoading && input && (
+             {isLoading && input && currentUserProfile && (
               <div className="flex items-start gap-3 flex-row-reverse">
                 <Avatar className="w-8 h-8 border bg-accent text-accent-foreground">
-                    <AvatarFallback>{getAvatarFallback(currentUserProfile)}</AvatarFallback>
+                    <AvatarImage src={currentUserProfile.avatarUrl} alt={currentUserProfile.displayName} />
+                    <AvatarFallback>{currentUserProfile.displayName?.charAt(0) || '?'}</AvatarFallback>
                 </Avatar>
                 <div className="p-3 rounded-lg bg-accent text-accent-foreground text-sm opacity-50">
                     <p>{input}</p>

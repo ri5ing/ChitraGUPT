@@ -15,7 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { useFirestore, useUser } from '@/firebase';
-import { addDoc, collection, doc, serverTimestamp, writeBatch } from 'firebase/firestore';
+import { addDoc, collection, doc, serverTimestamp, writeBatch, arrayUnion } from 'firebase/firestore';
 import type { Contract, AuditorProfile, UserProfile } from '@/types';
 import { Loader2, Send } from 'lucide-react';
 import { Textarea } from '../ui/textarea';
@@ -81,8 +81,8 @@ export function RequestReviewDialog({ children, contract, auditor, currentUserPr
       const contractRef = doc(firestore, 'users', user.uid, 'contracts', contract.id);
       batch.update(contractRef, {
         status: 'In Review',
-        auditorId: auditor.id,
-        reviewRequestId: reviewRequestRef.id // Store a reference to the request
+        auditorIds: arrayUnion(auditor.id),
+        reviewRequestIds: arrayUnion(reviewRequestRef.id) // Store a reference to the request
       });
       
       await batch.commit();
