@@ -118,6 +118,9 @@
         "publicReportId": {
             "type": "string",
             "description": "Reference to the PublicContractReport. (Relationship: Contract 1:1 PublicContractReport)"
+        },
+        "finalFeedback": {
+            "$ref": "#/backend/entities/AuditorFeedback"
         }
       },
       "required": [
@@ -212,7 +215,7 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "AuditorFeedback",
       "type": "object",
-      "description": "Represents feedback provided by an auditor on a contract.",
+      "description": "Represents final feedback provided by an auditor on a contract after review.",
       "properties": {
         "id": {
           "type": "string",
@@ -220,34 +223,43 @@
         },
         "contractId": {
           "type": "string",
-          "description": "Reference to Contract. (Relationship: Contract 1:N AuditorFeedback)"
+          "description": "Reference to the reviewed contract."
         },
         "auditorId": {
           "type": "string",
-          "description": "Reference to UserProfile (Auditor). (Relationship: UserProfile 1:N AuditorFeedback)"
+          "description": "Reference to the auditor who provided the feedback."
         },
-        "feedbackText": {
+        "auditorName": {
+            "type": "string",
+            "description": "Display name of the auditor at the time of feedback."
+        },
+        "auditorAvatarUrl": {
+            "type": "string",
+            "description": "URL of the auditor's avatar at the time of feedback."
+        },
+        "feedback": {
           "type": "string",
-          "description": "Textual feedback provided by the auditor."
+          "description": "The detailed textual feedback from the auditor."
         },
-        "approvalStatus": {
+        "verdict": {
           "type": "string",
-          "description": "Approval status of the contract by the auditor (e.g., approved, rejected, needs revision)."
+          "description": "The final verdict on the contract.",
+          "enum": ["Approved", "Approved with Revisions", "Action Required"]
         },
-        "annotationIds": {
-          "type": "array",
-          "description": "References to Annotations. (Relationship: Annotation 1:N AuditorFeedback)",
-          "items": {
-            "type": "string"
-          }
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The time the feedback was submitted."
         }
       },
       "required": [
         "id",
         "contractId",
         "auditorId",
-        "feedbackText",
-        "approvalStatus"
+        "auditorName",
+        "feedback",
+        "verdict",
+        "timestamp"
       ]
     },
     "Annotation": {
@@ -359,7 +371,7 @@
       "schema": {
         "$ref": "#/backend/entities/AuditorFeedback"
       },
-      "description": "Stores auditor feedback for each contract. The structure maintains a clear hierarchy and ensures that only authorized auditors can add feedback."
+      "description": "Stores final auditor feedback for a contract. The structure maintains a clear hierarchy and ensures that only the assigned auditor can add feedback."
     },
     "/users/{userId}/contracts/{contractId}/annotations/{annotationId}": {
       "schema": {

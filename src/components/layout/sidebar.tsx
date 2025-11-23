@@ -17,6 +17,7 @@ import {
   Bot,
   Users,
   User,
+  History,
 } from 'lucide-react';
 import { Logo } from '@/components/icons';
 import type { UserProfile } from '@/types';
@@ -40,6 +41,7 @@ export function AppSidebar({ user, isLoading }: AppSidebarProps) {
     client: [],
     auditor: [
       { href: '/dashboard/review-queue', icon: <ShieldCheck />, label: 'Review Queue' },
+      { href: '/dashboard/review-history', icon: <History />, label: 'Review History' },
     ],
     admin: [
       { href: '/dashboard/admin', icon: <UserCog />, label: 'Admin Panel' },

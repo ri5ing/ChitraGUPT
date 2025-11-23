@@ -1,7 +1,6 @@
-
 'use client';
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   Table,
   TableBody,
@@ -13,9 +12,6 @@ import {
 import {
   Card,
   CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
 import {
   AlertDialog,
@@ -41,11 +37,15 @@ import { ContractAnalysis } from "@/components/dashboard/contract-analysis";
 import { useToast } from "@/hooks/use-toast";
 import { UploadContractDialog } from "@/components/dashboard/upload-contract-dialog";
 import { EditableTitle } from "@/components/dashboard/editable-title";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+
+type ContractStatus = 'All' | 'In Review' | 'Completed' | 'Action Required';
 
 export default function AllContractsPage() {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
   const [expandedContractId, setExpandedContractId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<ContractStatus>('All');
   const { toast } = useToast();
 
   const contractsQuery = useMemoFirebase(() => {
@@ -55,6 +55,12 @@ export default function AllContractsPage() {
   }, [firestore, user]);
 
   const { data: contracts, isLoading: isContractsLoading, error } = useCollection<Contract>(contractsQuery);
+
+  const filteredContracts = useMemo(() => {
+    if (!contracts) return [];
+    if (activeTab === 'All') return contracts;
+    return contracts.filter(c => c.status === activeTab);
+  }, [contracts, activeTab]);
 
   const getStatusVariant = (status: string) => {
     switch (status) {
@@ -109,12 +115,12 @@ export default function AllContractsPage() {
       return <TableRow><TableCell colSpan={4} className="text-center text-destructive p-4">Error loading contracts.</TableCell></TableRow>
     }
 
-    if (!contracts || contracts.length === 0) {
-      return <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground p-8">No contracts found. Upload one to get started!</TableCell></TableRow>
+    if (!filteredContracts || filteredContracts.length === 0) {
+      return <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground p-8">No contracts found for this status.</TableCell></TableRow>
     }
 
     return (
-      contracts.map((contract) => (
+      filteredContracts.map((contract) => (
         <React.Fragment key={contract.id}>
           <TableRow>
             <TableCell>
@@ -183,21 +189,33 @@ export default function AllContractsPage() {
             </div>
         </div>
         <Card>
-            <CardContent className="pt-6">
-                <Table>
-                <TableHeader>
-                    <TableRow>
-                        <TableHead>Contract Title</TableHead>
-                        <TableHead className="hidden md:table-cell">Uploaded</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {renderContent()}
-                </TableBody>
-                </Table>
-            </CardContent>
+            <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as ContractStatus)} className="w-full">
+              <div className="p-4 border-b">
+                <TabsList>
+                  <TabsTrigger value="All">All</TabsTrigger>
+                  <TabsTrigger value="In Review">In Review</TabsTrigger>
+                  <TabsTrigger value="Completed">Completed</TabsTrigger>
+                  <TabsTrigger value="Action Required">Action Required</TabsTrigger>
+                </TabsList>
+              </div>
+              <TabsContent value={activeTab}>
+                <CardContent className="pt-0">
+                    <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Contract Title</TableHead>
+                            <TableHead className="hidden md:table-cell">Uploaded</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {renderContent()}
+                    </TableBody>
+                    </Table>
+                </CardContent>
+              </TabsContent>
+            </Tabs>
         </Card>
     </div>
   );

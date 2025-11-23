@@ -18,21 +18,23 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronUp, CheckSquare } from "lucide-react";
 import { useCollection, useFirestore, useUser, useMemoFirebase } from "@/firebase";
-import type { ReviewRequest, Contract } from "@/types";
+import type { ReviewRequest, Contract, UserProfile } from "@/types";
 import { collection, query, where, doc } from "firebase/firestore";
 import { format } from "date-fns";
 import { enIN } from "date-fns/locale";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ContractAnalysis } from "@/components/dashboard/contract-analysis";
 import { useDoc } from "@/firebase/firestore/use-doc";
+import { FinalizeReviewDialog } from "@/components/dashboard/finalize-review-dialog";
 
 function ExpandedRequestDetail({ request }: { request: ReviewRequest }) {
     const firestore = useFirestore();
 
     const contractRef = useMemoFirebase(() => {
         if (!firestore || !request) return null;
+        // Note: The path to the contract must be constructed using the contract's owner ID (contractUserId)
         return doc(firestore, `users/${request.contractUserId}/contracts`, request.contractId);
     }, [firestore, request]);
     
@@ -63,6 +65,13 @@ export default function ReviewQueuePage() {
   const firestore = useFirestore();
   const [expandedRequestId, setExpandedRequestId] = useState<string | null>(null);
 
+  const auditorProfileRef = useMemoFirebase(() => {
+    if (!user) return null;
+    return doc(firestore, 'users', user.uid);
+  }, [firestore, user]);
+
+  const { data: auditorProfile } = useDoc<UserProfile>(auditorProfileRef);
+
   const reviewQueueQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
     return query(
@@ -88,7 +97,10 @@ export default function ReviewQueuePage() {
               <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-24" /></TableCell>
               <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-20" /></TableCell>
               <TableCell><Skeleton className="h-6 w-20" /></TableCell>
-              <TableCell className="text-right"><Skeleton className="h-8 w-[70px] ml-auto" /></TableCell>
+              <TableCell className="text-right space-x-2">
+                <Skeleton className="h-8 w-[70px] inline-block" />
+                <Skeleton className="h-8 w-24 inline-block" />
+              </TableCell>
             </TableRow>
           ))
       );
@@ -111,7 +123,6 @@ export default function ReviewQueuePage() {
             </TableCell>
              <TableCell className="hidden md:table-cell">
               <div className="font-medium">{request.clientName}</div>
-              <div className="text-muted-foreground text-xs">{request.clientId}</div>
             </TableCell>
             <TableCell className="hidden md:table-cell">
               {request.requestDate ? format(request.requestDate.toDate(), 'P', { locale: enIN }) : 'N/A'}
@@ -121,11 +132,19 @@ export default function ReviewQueuePage() {
                 In Review
               </Badge>
             </TableCell>
-            <TableCell className="text-right">
+            <TableCell className="text-right space-x-2">
                 <Button variant="ghost" size="sm" onClick={() => handleToggleRow(request.id)}>
                     {expandedRequestId === request.id ? <ChevronUp/> : <ChevronDown/>}
-                    <span className="ml-2 hidden sm:inline">View Details</span>
+                    <span className="ml-2 hidden sm:inline">Details</span>
                 </Button>
+                {auditorProfile && (
+                    <FinalizeReviewDialog request={request} auditorProfile={auditorProfile}>
+                        <Button size="sm">
+                            <CheckSquare className="mr-2 h-4 w-4" />
+                            Finalize
+                        </Button>
+                    </FinalizeReviewDialog>
+                )}
             </TableCell>
           </TableRow>
           {expandedRequestId === request.id && (

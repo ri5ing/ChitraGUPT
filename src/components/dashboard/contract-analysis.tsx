@@ -1,6 +1,6 @@
 'use client';
 
-import type { AIAnalysisReport, Contract, UserProfile, AuditorProfile } from '@/types';
+import type { AIAnalysisReport, Contract, UserProfile, AuditorProfile, AuditorFeedback } from '@/types';
 import {
   Card,
   CardContent,
@@ -31,6 +31,7 @@ import {
   BrainCircuit,
   AlertTriangle,
   FileJson,
+  CheckCircle,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { enIN } from 'date-fns/locale';
@@ -64,6 +65,15 @@ const getSeverityBadgeClass = (severity?: AIAnalysisReport['documentSeverity']) 
         return 'bg-blue-500 text-white';
       default:
         return 'bg-gray-500 text-white';
+    }
+}
+
+const getVerdictBadgeClass = (verdict?: AuditorFeedback['verdict']) => {
+    switch(verdict) {
+        case 'Approved': return 'bg-green-600 text-white';
+        case 'Approved with Revisions': return 'bg-yellow-500 text-black';
+        case 'Action Required': return 'bg-red-600 text-white';
+        default: return 'bg-gray-500 text-white';
     }
 }
 
@@ -219,7 +229,32 @@ export function ContractAnalysis({ contract }: ContractAnalysisProps) {
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-4">
-                {contract.auditorId && auditorProfile ? (
+                {contract.status === 'Completed' && contract.finalFeedback ? (
+                    <div className="p-4 rounded-lg border bg-secondary/50 space-y-4">
+                        <div className='flex items-center gap-2'>
+                           <CheckCircle className="h-6 w-6 text-green-600" />
+                           <h4 className="font-semibold text-lg">Review Completed</h4>
+                        </div>
+                        <div className="flex items-center gap-4">
+                            <Avatar className="w-12 h-12">
+                                <AvatarImage src={contract.finalFeedback.auditorAvatarUrl} />
+                                <AvatarFallback>{contract.finalFeedback.auditorName?.slice(0,2)}</AvatarFallback>
+                            </Avatar>
+                            <div>
+                                <p className="font-semibold">{contract.finalFeedback.auditorName}</p>
+                                <p className="text-sm text-muted-foreground">{format(contract.finalFeedback.timestamp.toDate(), 'PPP')}</p>
+                            </div>
+                        </div>
+                        <div>
+                            <p className='text-sm font-semibold'>Final Verdict</p>
+                             <Badge className={cn('mt-1', getVerdictBadgeClass(contract.finalFeedback.verdict))}>{contract.finalFeedback.verdict}</Badge>
+                        </div>
+                        <div>
+                            <p className='text-sm font-semibold'>Auditor's Notes</p>
+                            <p className='text-sm text-muted-foreground p-3 mt-1 bg-background rounded-md border'>{contract.finalFeedback.feedback}</p>
+                        </div>
+                    </div>
+                ) : contract.auditorId && auditorProfile ? (
                   <>
                   <div className="p-4 rounded-lg border bg-secondary/50">
                     <h4 className="font-semibold mb-2">Auditor Assigned</h4>
@@ -234,25 +269,7 @@ export function ContractAnalysis({ contract }: ContractAnalysisProps) {
                         </div>
                     </div>
                   </div>
-                   {contract.auditorFeedback && contract.auditorFeedback.length > 0 ? (
-                      contract.auditorFeedback.map(fb => (
-                          <div key={fb.id} className="flex gap-4">
-                              <Avatar>
-                                  <AvatarImage src={fb.auditorAvatarUrl} />
-                                  <AvatarFallback>{fb.auditorName.slice(0,2)}</AvatarFallback>
-                              </Avatar>
-                              <div className="flex-1 space-y-1">
-                                  <div className="flex items-center justify-between">
-                                      <p className="font-semibold">{fb.auditorName}</p>
-                                      <p className="text-xs text-muted-foreground">{fb.timestamp.toDateString()}</p>
-                                  </div>
-                                  <p className="text-sm text-muted-foreground p-3 bg-secondary rounded-lg">{fb.feedback}</p>
-                              </div>
-                          </div>
-                      ))
-                    ) : (
-                      <div className="text-center py-6 text-muted-foreground">Awaiting feedback from {auditorProfile.displayName}.</div>
-                    )}
+                    <div className="text-center py-6 text-muted-foreground">Awaiting feedback from {auditorProfile.displayName}.</div>
                     {clientProfile && auditorProfile && (
                       <AuditorChatDialog contract={contract} auditorProfile={auditorProfile} clientProfile={clientProfile} />
                     )}

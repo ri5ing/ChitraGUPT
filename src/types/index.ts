@@ -45,6 +45,7 @@ export type Contract = {
   description?: string;
   aiAnalysis?: AIAnalysisReport;
   auditorFeedback?: AuditorFeedback[];
+  finalFeedback?: AuditorFeedback;
   auditorId?: string;
   publicReportId?: string;
 };
@@ -77,6 +78,7 @@ export type AuditorFeedback = {
   auditorAvatarUrl: string;
   feedback: string;
   timestamp: Timestamp;
+  verdict: 'Approved' | 'Approved with Revisions' | 'Action Required';
 };
 
 export type ChatMessage = {
