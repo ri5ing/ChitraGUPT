@@ -93,8 +93,8 @@ service cloud.firestore {
      * @path /contracts/{contractId}
      */
     match /contracts/{contractId} {
-        // Only assigned auditors can read from this collection for their history.
-        allow get, list: if isAuditor() && isAssignedAuditor(resource.data.auditorId);
+        // Only auditors can query for contracts assigned to them.
+        allow get, list: if isAuditor() && request.query.get('auditorId') == request.auth.uid;
         // Writes to this collection should be handled by backend logic/transactions, not clients.
         allow write: if false;
     }
