@@ -81,7 +81,8 @@ export function RequestReviewDialog({ children, contract, auditor, currentUserPr
       const contractRef = doc(firestore, 'users', user.uid, 'contracts', contract.id);
       batch.update(contractRef, {
         status: 'In Review',
-        auditorId: auditor.id
+        auditorId: auditor.id,
+        reviewRequestId: reviewRequestRef.id // Store a reference to the request
       });
       
       await batch.commit();

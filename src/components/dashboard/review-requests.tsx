@@ -132,8 +132,7 @@ export function ReviewRequests() {
         const batch = writeBatch(firestore);
 
         const requestRef = doc(firestore, 'reviewRequests', request.id);
-        batch.update(requestRef, { status: newStatus });
-
+        
         const contractRef = doc(firestore, `users/${request.contractUserId}/contracts`, request.contractId);
         
         const auditorUserRef = doc(firestore, 'users', user.uid);
@@ -142,12 +141,14 @@ export function ReviewRequests() {
         if (newStatus === 'rejected') {
             batch.update(contractRef, { 
                 status: 'Action Required',
-                auditorId: null 
+                auditorId: null,
+                reviewRequestId: null
             });
+            // The request is done, so we can delete it.
+            batch.delete(requestRef);
         } else { // accepted
-            batch.update(contractRef, {
-                status: 'In Review'
-            });
+            batch.update(requestRef, { status: 'accepted' });
+            batch.update(contractRef, { status: 'In Review' });
             // Increment active contract count for both user and public profiles
             batch.update(auditorUserRef, { currentActiveContracts: increment(1) });
             batch.update(auditorPublicRef, { currentActiveContracts: increment(1) });

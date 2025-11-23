@@ -21,7 +21,7 @@ import {
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { useFirestore } from '@/firebase';
-import { doc, writeBatch, serverTimestamp, increment, deleteDoc } from 'firebase/firestore';
+import { doc, writeBatch, serverTimestamp } from 'firebase/firestore';
 import type { ReviewRequest, UserProfile, AuditorFeedback } from '@/types';
 import { Loader2, Send } from 'lucide-react';
 import { Textarea } from '../ui/textarea';
@@ -57,15 +57,8 @@ export function FinalizeReviewDialog({ children, request, auditorProfile }: Fina
 
       // 1. Reference to the original contract
       const contractRef = doc(firestore, 'users', request.contractUserId, 'contracts', request.contractId);
-      
-      // 2. Reference to the review request
-      const requestRef = doc(firestore, 'reviewRequests', request.id);
 
-      // 3. References to auditor's profiles (public and private)
-      const auditorUserRef = doc(firestore, 'users', request.auditorId);
-      const auditorPublicRef = doc(firestore, 'auditors', request.auditorId);
-
-      // 4. Create the final feedback object
+      // 2. Create the final feedback object
       const finalFeedbackData: Omit<AuditorFeedback, 'id'> = {
         contractId: request.contractId,
         auditorId: auditorProfile.id,
@@ -76,30 +69,24 @@ export function FinalizeReviewDialog({ children, request, auditorProfile }: Fina
         timestamp: serverTimestamp() as any, // Cast to any to satisfy type temporarily
       };
 
-      // 5. Update the original contract with status and final feedback
+      // 3. Update the original contract with status and final feedback
       batch.update(contractRef, {
-        status: 'Completed',
+        status: 'Pending Approval', // NEW STATUS: Waiting for client
         finalFeedback: finalFeedbackData,
       });
-      
-      // 6. Decrement the auditor's active contract count
-      batch.update(auditorUserRef, { currentActiveContracts: increment(-1) });
-      batch.update(auditorPublicRef, { currentActiveContracts: increment(-1) });
-
-      // 7. Delete the review request as it's now completed
-      batch.delete(requestRef);
 
       await batch.commit();
 
       toast({
-        title: 'Review Finalized',
-        description: `Your feedback for "${request.contractTitle}" has been submitted.`,
+        title: 'Review Submitted',
+        description: `Your feedback for "${request.contractTitle}" has been submitted for client approval.`,
       });
       setOpen(false);
       setVerdict(undefined);
       setFeedback('');
 
-    } catch (error: any) {
+    } catch (error: any)
+{
       console.error(error);
       toast({
         variant: 'destructive',
@@ -118,7 +105,7 @@ export function FinalizeReviewDialog({ children, request, auditorProfile }: Fina
         <DialogHeader>
           <DialogTitle>Finalize Review for "{request.contractTitle}"</DialogTitle>
           <DialogDescription>
-            Submit your final verdict and notes. This will mark the contract as 'Completed' for the client.
+            Submit your final verdict and notes. This will send the review to the client for their final approval.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -149,7 +136,7 @@ export function FinalizeReviewDialog({ children, request, auditorProfile }: Fina
             <Button type="button" variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
             <Button type="submit" disabled={isLoading || !verdict || !feedback}>
               {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
-              Submit Final Review
+              Submit for Client Approval
             </Button>
           </DialogFooter>
         </form>

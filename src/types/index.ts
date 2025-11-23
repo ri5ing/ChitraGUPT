@@ -39,7 +39,7 @@ export type Contract = {
   id: string;
   title: string;
   userId: string;
-  status: 'Pending' | 'In Review' | 'Completed' | 'Action Required';
+  status: 'Pending' | 'In Review' | 'Completed' | 'Action Required' | 'Pending Approval';
   uploadDate: Timestamp;
   fileName: string;
   description?: string;
@@ -48,6 +48,7 @@ export type Contract = {
   finalFeedback?: AuditorFeedback;
   auditorId?: string;
   publicReportId?: string;
+  reviewRequestId?: string;
 };
 
 export type PublicContractReport = {
@@ -96,7 +97,7 @@ export type ReviewRequest = {
   clientId: string;
   clientName: string;
   auditorId: string;
-  status: 'pending' | 'accepted' | 'rejected';
+  status: 'pending' | 'accepted' | 'rejected' | 'pending_approval';
   requestDate: Timestamp;
   // New fields for the secure connection workflow
   budget?: number;
