@@ -46,7 +46,7 @@ import { useCollection, useDoc, useFirestore, useMemoFirebase, useUser } from '@
 import { collection, doc, increment, writeBatch, arrayUnion } from 'firebase/firestore';
 import { AvailableAuditors } from './available-auditors';
 import { ShareReportButton } from './share-report-button';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import {
   AlertDialog,
