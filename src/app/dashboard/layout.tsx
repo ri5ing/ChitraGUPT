@@ -34,7 +34,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         <AppSidebar user={userProfile} isLoading={isUserLoading || isProfileLoading} />
         <div className="flex flex-col flex-1">
           <AppHeader user={userProfile} isLoading={isUserLoading || isProfileLoading} />
-          <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
+          <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 w-full">
             {isUserLoading || isProfileLoading ? (
               <div className="space-y-6">
                 <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
