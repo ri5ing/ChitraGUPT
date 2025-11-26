@@ -22,7 +22,7 @@ export default function SettingsPage() {
     }
 
     return (
-        <div className="space-y-6 max-w-2xl mx-auto">
+        <div className="space-y-6">
             <div>
                 <h2 className="text-2xl font-bold tracking-tight font-headline">Settings</h2>
                 <p className="text-muted-foreground">Manage your account settings and preferences.</p>
