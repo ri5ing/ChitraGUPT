@@ -54,7 +54,7 @@ export function AppSidebar({ user, isLoading }: AppSidebarProps) {
     <Sidebar>
       <SidebarHeader className="border-b">
         <div className="flex items-center gap-2 p-2">
-          <Logo className="h-8 w-8 text-primary" />
+          <Logo className="h-9 w-9 text-primary" />
           <span className="text-xl font-bold font-headline group-data-[collapsible=icon]:hidden">
             ChitraGupt
           </span>
