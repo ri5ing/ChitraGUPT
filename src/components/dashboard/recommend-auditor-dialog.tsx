@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { useUser, useFirestore, useCollection, useMemoFirebase, useDoc } from '@/firebase';
-import { collection, query } from 'firebase/firestore';
+import { collection, query, doc } from 'firebase/firestore';
 import type { AuditorProfile, Contract, UserProfile } from '@/types';
 import { Loader2 } from 'lucide-react';
 import { ScrollArea } from '../ui/scroll-area';
@@ -53,15 +53,15 @@ export function RecommendAuditorDialog({ children, contract }: RecommendAuditorD
       return (
         <div className="space-y-4">
           {[...Array(3)].map((_, i) => (
-            <Card key={i}>
-                <CardHeader className="flex flex-row items-center gap-4 pb-4">
+            <div key={i} className='p-3 rounded-lg border'>
+                <div className="flex flex-row items-center gap-4 pb-4">
                     <Skeleton className="h-12 w-12 rounded-full" />
                     <div className="flex-1 space-y-2">
                         <Skeleton className="h-4 w-3/4" />
                         <Skeleton className="h-4 w-1/2" />
                     </div>
-                </CardHeader>
-            </Card>
+                </div>
+            </div>
           ))}
         </div>
       );
