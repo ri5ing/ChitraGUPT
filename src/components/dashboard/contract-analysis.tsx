@@ -59,6 +59,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '../ui/alert-dialog';
+import { RecommendAuditorDialog } from './recommend-auditor-dialog';
 
 type ContractAnalysisProps = {
   contract: Contract;
@@ -178,6 +179,140 @@ export function ContractAnalysis({ contract }: ContractAnalysisProps) {
         toast({ variant: 'destructive', title: 'Update Failed', description: error.message });
     } finally {
         setIsUpdating(false);
+    }
+  };
+
+  const renderAuditorReviewContent = () => {
+    switch (contract.status) {
+      case 'Completed':
+        return (
+          <div className="p-4 rounded-lg border bg-secondary/50 space-y-4">
+            <div className='flex items-center gap-2'>
+              <CheckCircle className="h-6 w-6 text-green-600" />
+              <h4 className="font-semibold text-lg">Review Completed</h4>
+            </div>
+            {contract.finalFeedback ? (
+              <>
+                <div className="flex items-center gap-4">
+                  <Avatar className="w-12 h-12">
+                    <AvatarImage src={contract.finalFeedback.auditorAvatarUrl} />
+                    <AvatarFallback>{contract.finalFeedback.auditorName?.slice(0, 2)}</AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <p className="font-semibold">{contract.finalFeedback.auditorName}</p>
+                  </div>
+                </div>
+                <div>
+                  <p className='text-sm font-semibold'>Final Verdict</p>
+                  <Badge className={cn('mt-1', getVerdictBadgeClass(contract.finalFeedback.verdict))}>{contract.finalFeedback.verdict}</Badge>
+                </div>
+                <div>
+                  <p className='text-sm font-semibold'>Auditor's Notes</p>
+                  <p className='text-sm text-muted-foreground p-3 mt-1 bg-background rounded-md border'>{contract.finalFeedback.feedback}</p>
+                </div>
+              </>
+            ) : (
+              <p className="text-sm text-muted-foreground">This contract was completed without a final auditor review.</p>
+            )}
+          </div>
+        );
+
+      case 'In Review':
+      case 'Pending Approval':
+        if (!contract.auditorIds || contract.auditorIds.length === 0) {
+          // This case shouldn't happen if logic is correct, but as a fallback:
+          return <p className="text-center text-muted-foreground py-6">Assigning an auditor...</p>;
+        }
+        return (
+          <>
+            <div className="p-4 rounded-lg border bg-secondary/50">
+              <h4 className="font-semibold mb-2">Assigned Auditors</h4>
+              <div className='space-y-3'>
+                {auditorProfiles.map(profile => (
+                  <div key={profile.id} className="flex items-center gap-4">
+                    <Avatar className="w-10 h-10">
+                      <AvatarImage src={profile.avatarUrl} />
+                      <AvatarFallback>{profile.displayName?.slice(0, 2)}</AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p className="font-semibold text-sm">{profile.displayName}</p>
+                      <p className="text-xs text-muted-foreground">{profile.firm || 'Independent'}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            {isClientOwner && (
+              <div className="text-center text-sm p-2 rounded-md bg-blue-50 border border-blue-200 text-blue-800">
+                <p>You can add more auditors to this review.</p>
+                <AvailableAuditors contract={contract} buttonContent={<><UserPlus className="mr-2 h-4 w-4" />Add Another Auditor</>} />
+              </div>
+            )}
+            {clientProfile && auditorProfiles.length > 0 && (
+              <AuditorChatDialog contract={contract} auditorProfiles={auditorProfiles} clientProfile={clientProfile} />
+            )}
+            {isClientOwner && contract.status === 'Pending Approval' && contract.finalFeedback && (
+              <Card className="bg-amber-50 border-amber-200">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2"><RefreshCw className="h-5 w-5 text-amber-600" /> Awaiting Your Approval</CardTitle>
+                  <CardDescription>The auditor has submitted their final review. Please approve the work or request revisions.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <p className='text-sm font-semibold'>Auditor's Verdict</p>
+                    <Badge className={cn('mt-1', getVerdictBadgeClass(contract.finalFeedback.verdict))}>{contract.finalFeedback.verdict}</Badge>
+                  </div>
+                  <div>
+                    <p className='text-sm font-semibold'>Auditor's Notes</p>
+                    <p className='text-sm text-muted-foreground p-3 mt-1 bg-background rounded-md border'>{contract.finalFeedback.feedback}</p>
+                  </div>
+                </CardContent>
+                <CardFooter className="gap-2">
+                  <Button onClick={() => handleClientApproval('completed')} disabled={isUpdating} className="flex-1 bg-green-600 hover:bg-green-700">
+                    {isUpdating ? <Loader2 className="animate-spin" /> : <ThumbsUp className="mr-2" />}
+                    Approve & Complete
+                  </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="outline" disabled={isUpdating} className="flex-1">
+                        {isUpdating ? <Loader2 className="animate-spin" /> : <ThumbsDown className="mr-2" />}
+                        Request Revisions
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Request Revisions?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This will send the contract back to the auditor's queue for more work. Are you sure?
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => handleClientApproval('in_review')}>
+                          Yes, Request Revisions
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </CardFooter>
+              </Card>
+            )}
+          </>
+        );
+
+      case 'Pending':
+      case 'Action Required':
+      default:
+        return (
+          <div className="text-center p-4 border-2 border-dashed rounded-lg">
+            <p className="text-muted-foreground mb-4">This contract is ready for an expert review.</p>
+            <RecommendAuditorDialog contractId={contract.id}>
+              <Button>
+                <UserPlus className="mr-2 h-4 w-4" /> Request Auditor Review
+              </Button>
+            </RecommendAuditorDialog>
+          </div>
+        );
     }
   };
 
@@ -305,114 +440,7 @@ export function ContractAnalysis({ contract }: ContractAnalysisProps) {
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-4">
-                {contract.status === 'Completed' && contract.finalFeedback ? (
-                    <div className="p-4 rounded-lg border bg-secondary/50 space-y-4">
-                        <div className='flex items-center gap-2'>
-                           <CheckCircle className="h-6 w-6 text-green-600" />
-                           <h4 className="font-semibold text-lg">Review Completed</h4>
-                        </div>
-                         {auditorProfiles.map(profile => (
-                            <div key={profile.id} className="flex items-center gap-4">
-                                <Avatar className="w-12 h-12">
-                                    <AvatarImage src={profile.avatarUrl} />
-                                    <AvatarFallback>{profile.displayName?.slice(0,2)}</AvatarFallback>
-                                </Avatar>
-                                <div>
-                                    <p className="font-semibold">{profile.displayName}</p>
-                                    <p className="text-sm text-muted-foreground">{profile.firm || 'Independent'}</p>
-                                </div>
-                            </div>
-                        ))}
-                        <div>
-                            <p className='text-sm font-semibold'>Final Verdict</p>
-                             <Badge className={cn('mt-1', getVerdictBadgeClass(contract.finalFeedback.verdict))}>{contract.finalFeedback.verdict}</Badge>
-                        </div>
-                        <div>
-                            <p className='text-sm font-semibold'>Auditor's Notes</p>
-                            <p className='text-sm text-muted-foreground p-3 mt-1 bg-background rounded-md border'>{contract.finalFeedback.feedback}</p>
-                        </div>
-                    </div>
-                ) : (contract.status === 'Pending Approval' || contract.status === 'In Review') && contract.auditorIds && contract.auditorIds.length > 0 ? (
-                  <>
-                  <div className="p-4 rounded-lg border bg-secondary/50">
-                    <h4 className="font-semibold mb-2">Assigned Auditors</h4>
-                    <div className='space-y-3'>
-                    {auditorProfiles.map(profile => (
-                      <div key={profile.id} className="flex items-center gap-4">
-                          <Avatar className="w-10 h-10">
-                              <AvatarImage src={profile.avatarUrl} />
-                              <AvatarFallback>{profile.displayName?.slice(0,2)}</AvatarFallback>
-                          </Avatar>
-                          <div>
-                              <p className="font-semibold text-sm">{profile.displayName}</p>
-                              <p className="text-xs text-muted-foreground">{profile.firm || 'Independent'}</p>
-                          </div>
-                      </div>
-                    ))}
-                    </div>
-                  </div>
-                    {isClientOwner && (
-                        <div className="text-center text-sm p-2 rounded-md bg-blue-50 border border-blue-200 text-blue-800">
-                            <p>You can add more auditors to this review.</p>
-                             <AvailableAuditors contract={contract} buttonContent={<><UserPlus className="mr-2 h-4 w-4"/>Add Another Auditor</>} />
-                        </div>
-                    )}
-                    {contract.status === 'In Review' && <div className="text-center py-6 text-muted-foreground">Awaiting feedback from the review team.</div>}
-                    {clientProfile && auditorProfiles.length > 0 && (
-                      <AuditorChatDialog contract={contract} auditorProfiles={auditorProfiles} clientProfile={clientProfile} />
-                    )}
-                  </>
-                ) : (
-                  <AvailableAuditors contract={contract} buttonContent={<><UserPlus className="mr-2 h-4 w-4"/>Request First Review</>} />
-                )}
-                
-                {isClientOwner && contract.status === 'Pending Approval' && contract.finalFeedback && (
-                    <Card className="bg-amber-50 border-amber-200">
-                        <CardHeader>
-                           <CardTitle className="flex items-center gap-2"><RefreshCw className="h-5 w-5 text-amber-600"/> Awaiting Your Approval</CardTitle>
-                            <CardDescription>The auditor has submitted their final review. Please approve the work or request revisions.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                             <div>
-                                <p className='text-sm font-semibold'>Auditor's Verdict</p>
-                                <Badge className={cn('mt-1', getVerdictBadgeClass(contract.finalFeedback.verdict))}>{contract.finalFeedback.verdict}</Badge>
-                            </div>
-                            <div>
-                                <p className='text-sm font-semibold'>Auditor's Notes</p>
-                                <p className='text-sm text-muted-foreground p-3 mt-1 bg-background rounded-md border'>{contract.finalFeedback.feedback}</p>
-                            </div>
-                        </CardContent>
-                        <CardFooter className="gap-2">
-                             <Button onClick={() => handleClientApproval('completed')} disabled={isUpdating} className="flex-1 bg-green-600 hover:bg-green-700">
-                                {isUpdating ? <Loader2 className="animate-spin" /> : <ThumbsUp className="mr-2"/>}
-                                Approve & Complete
-                            </Button>
-                            
-                            <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                    <Button variant="outline" disabled={isUpdating} className="flex-1">
-                                         {isUpdating ? <Loader2 className="animate-spin" /> : <ThumbsDown className="mr-2"/>}
-                                        Request Revisions
-                                    </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                        <AlertDialogTitle>Request Revisions?</AlertDialogTitle>
-                                        <AlertDialogDescription>
-                                            This will send the contract back to the auditor's queue for more work. Are you sure?
-                                        </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                        <AlertDialogAction onClick={() => handleClientApproval('in_review')}>
-                                            Yes, Request Revisions
-                                        </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                </AlertDialogContent>
-                            </AlertDialog>
-                        </CardFooter>
-                    </Card>
-                )}
+                {renderAuditorReviewContent()}
               </div>
             </CardContent>
           </Card>
