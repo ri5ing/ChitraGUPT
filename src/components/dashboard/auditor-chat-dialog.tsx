@@ -69,42 +69,33 @@ export function AuditorChatDialog({ contract, clientProfile, auditorProfiles }: 
     setIsLoading(true);
 
     try {
-        const batch = writeBatch(firestore);
-        
-        // Add new message
-        const chatPath = `users/${contract.userId}/contracts/${contract.id}/chats`;
-        const newMessageRef = doc(collection(firestore, chatPath));
-        batch.set(newMessageRef, {
-            senderId: user.uid,
-            senderName: currentUserProfile.displayName || currentUserProfile.email,
-            senderAvatarUrl: currentUserProfile.avatarUrl,
-            text: input,
-            timestamp: serverTimestamp(),
-        });
+        await runTransaction(firestore, async (transaction) => {
+            const chatPath = `users/${contract.userId}/contracts/${contract.id}/chats`;
+            const newMessageRef = doc(collection(firestore, chatPath));
 
-        // Handle credit transaction if the current user is the client
-        if (isClient) {
-            const clientRef = doc(firestore, 'users', user.uid);
-            
-             await runTransaction(firestore, async (transaction) => {
+            // If the current user is the client, handle the credit transaction
+            if (isClient) {
+                const clientRef = doc(firestore, 'users', user.uid);
                 const clientDoc = await transaction.get(clientRef);
 
-                if (!clientDoc.exists()) throw new Error("Client profile not found.");
+                if (!clientDoc.exists()) {
+                    throw new Error("Client profile not found.");
+                }
 
                 const clientBalance = clientDoc.data()?.creditBalance || 0;
                 if (clientBalance < CHAT_COST) {
                     throw new Error(`Insufficient credits. Each message costs ${CHAT_COST} credits.`);
                 }
                 
-                // Deduct cost from client
+                // 1. Deduct cost from client
                 const newClientBalance = clientBalance - CHAT_COST;
                 transaction.update(clientRef, { creditBalance: newClientBalance });
 
-                // Distribute reward to auditors
+                // 2. Distribute reward to auditors
                 if (contract.auditorIds) {
                     for (const auditorId of contract.auditorIds) {
                         const auditorRef = doc(firestore, 'users', auditorId);
-                        const auditorDoc = await transaction.get(auditorRef);
+                        const auditorDoc = await transaction.get(auditorRef); // Read within transaction
                         if (auditorDoc.exists()) {
                             const auditorBalance = auditorDoc.data()?.creditBalance || 0;
                             const newAuditorBalance = auditorBalance + AUDITOR_REWARD;
@@ -112,10 +103,19 @@ export function AuditorChatDialog({ contract, clientProfile, auditorProfiles }: 
                         }
                     }
                 }
-             });
-        }
+            }
+            
+            // 3. Add the new message
+            // This happens for both client and auditor messages.
+            transaction.set(newMessageRef, {
+                senderId: user.uid,
+                senderName: currentUserProfile.displayName || currentUserProfile.email,
+                senderAvatarUrl: currentUserProfile.avatarUrl,
+                text: input,
+                timestamp: serverTimestamp(),
+            });
+        });
         
-        await batch.commit();
         setInput('');
 
     } catch (error: any) {
