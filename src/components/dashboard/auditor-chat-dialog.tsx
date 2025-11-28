@@ -16,7 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Loader2, MessageSquareQuote, Send } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useCollection, useUser, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, addDoc, serverTimestamp, query, orderBy, runTransaction, doc, writeBatch } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, query, orderBy, runTransaction, doc, writeBatch, DocumentSnapshot, DocumentData } from 'firebase/firestore';
 import type { ChatMessage, Contract, UserProfile } from '@/types';
 import { ScrollArea } from '../ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
@@ -76,8 +76,9 @@ export function AuditorChatDialog({ contract, clientProfile, auditorProfiles }: 
             // If the current user is the client, handle the credit transaction
             if (isClient) {
                 const clientRef = doc(firestore, 'users', user.uid);
+                
+                // --- ALL READS FIRST ---
                 const clientDoc = await transaction.get(clientRef);
-
                 if (!clientDoc.exists()) {
                     throw new Error("Client profile not found.");
                 }
@@ -86,26 +87,27 @@ export function AuditorChatDialog({ contract, clientProfile, auditorProfiles }: 
                 if (clientBalance < CHAT_COST) {
                     throw new Error(`Insufficient credits. Each message costs ${CHAT_COST} credits.`);
                 }
+
+                const auditorRefs = (contract.auditorIds || []).map(id => doc(firestore, 'users', id));
+                const auditorDocs = await Promise.all(auditorRefs.map(ref => transaction.get(ref)));
+
+                // --- ALL WRITES LAST ---
                 
                 // 1. Deduct cost from client
                 const newClientBalance = clientBalance - CHAT_COST;
                 transaction.update(clientRef, { creditBalance: newClientBalance });
 
                 // 2. Distribute reward to auditors
-                if (contract.auditorIds) {
-                    for (const auditorId of contract.auditorIds) {
-                        const auditorRef = doc(firestore, 'users', auditorId);
-                        const auditorDoc = await transaction.get(auditorRef); // Read within transaction
-                        if (auditorDoc.exists()) {
-                            const auditorBalance = auditorDoc.data()?.creditBalance || 0;
-                            const newAuditorBalance = auditorBalance + AUDITOR_REWARD;
-                            transaction.update(auditorRef, { creditBalance: newAuditorBalance });
-                        }
-                    }
-                }
+                auditorDocs.forEach((auditorDoc) => {
+                  if (auditorDoc.exists()) {
+                    const auditorBalance = auditorDoc.data()?.creditBalance || 0;
+                    const newAuditorBalance = auditorBalance + AUDITOR_REWARD;
+                    transaction.update(auditorDoc.ref, { creditBalance: newAuditorBalance });
+                  }
+                });
             }
             
-            // 3. Add the new message
+            // 3. Add the new message (This is a write operation)
             // This happens for both client and auditor messages.
             transaction.set(newMessageRef, {
                 senderId: user.uid,
