@@ -1,21 +1,14 @@
 import type { SVGProps } from 'react';
+import Image from 'next/image';
 
-export function Logo(props: SVGProps<SVGSVGElement>) {
+export function Logo(props: Omit<React.ComponentProps<typeof Image>, 'src' | 'alt'>) {
   return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
+    <Image
+      src="https://res.cloudinary.com/dslsrhlsh/image/upload/v1759618011/ChitraGUPT.png-removebg-preview_k43a5j.png"
+      alt="ChitraGupt Logo"
+      width={100}
+      height={100}
       {...props}
-    >
-      <title>ChitraGupt Logo</title>
-      <path d="M12 22h6a2 2 0 0 0 2-2V7l-5-5H6a2 2 0 0 0-2 2v10" />
-      <path d="M14 2v4a2 2 0 0 0 2 2h4" />
-      <path d="M10.4 12.6a2 2 0 1 1 3 3L8 21l-4 1 1-4Z" />
-    </svg>
+    />
   );
 }
