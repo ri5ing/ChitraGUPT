@@ -58,7 +58,10 @@ export function FinalizeReviewDialog({ children, request, auditorProfile }: Fina
       // 1. Reference to the original contract
       const contractRef = doc(firestore, 'users', request.contractUserId, 'contracts', request.contractId);
 
-      // 2. Create the final feedback object
+      // 2. Reference to the review request
+      const requestRef = doc(firestore, 'reviewRequests', request.id);
+
+      // 3. Create the final feedback object
       const finalFeedbackData: Omit<AuditorFeedback, 'id'> = {
         contractId: request.contractId,
         auditorId: auditorProfile.id,
@@ -69,11 +72,17 @@ export function FinalizeReviewDialog({ children, request, auditorProfile }: Fina
         timestamp: serverTimestamp() as any, // Cast to any to satisfy type temporarily
       };
 
-      // 3. Update the original contract with status and final feedback
+      // 4. Update the original contract with status and final feedback
       batch.update(contractRef, {
         status: 'Pending Approval', // NEW STATUS: Waiting for client
         finalFeedback: finalFeedbackData,
       });
+      
+      // 5. Update the review request status
+      batch.update(requestRef, {
+        status: 'pending_approval'
+      });
+
 
       await batch.commit();
 

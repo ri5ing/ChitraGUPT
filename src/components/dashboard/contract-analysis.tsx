@@ -306,7 +306,7 @@ export function ContractAnalysis({ contract }: ContractAnalysisProps) {
         return (
           <div className="text-center p-4 border-2 border-dashed rounded-lg">
             <p className="text-muted-foreground mb-4">This contract is ready for an expert review.</p>
-            <RecommendAuditorDialog contractId={contract.id}>
+            <RecommendAuditorDialog contract={contract}>
               <Button>
                 <UserPlus className="mr-2 h-4 w-4" /> Request Auditor Review
               </Button>

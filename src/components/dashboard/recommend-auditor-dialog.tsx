@@ -12,29 +12,34 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, doc, updateDoc } from 'firebase/firestore';
-import type { AuditorProfile } from '@/types';
-import { Loader2, Send } from 'lucide-react';
+import { useUser, useFirestore, useCollection, useMemoFirebase, useDoc } from '@/firebase';
+import { collection, query } from 'firebase/firestore';
+import type { AuditorProfile, Contract, UserProfile } from '@/types';
+import { Loader2 } from 'lucide-react';
 import { ScrollArea } from '../ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Badge } from '../ui/badge';
 import { Skeleton } from '../ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, UserPlus } from 'lucide-react';
+import { RequestReviewDialog } from './request-review-dialog';
 
 type RecommendAuditorDialogProps = {
   children: ReactNode;
-  contractId: string;
+  contract: Contract;
 };
 
-export function RecommendAuditorDialog({ children, contractId }: RecommendAuditorDialogProps) {
+export function RecommendAuditorDialog({ children, contract }: RecommendAuditorDialogProps) {
   const [open, setOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [selectedAuditor, setSelectedAuditor] = useState<AuditorProfile | null>(null);
-  const { toast } = useToast();
   const { user } = useUser();
   const firestore = useFirestore();
+
+  const userProfileRef = useMemoFirebase(() => {
+    if (!user) return null;
+    return doc(firestore, 'users', user.uid);
+  }, [firestore, user]);
+
+  const { data: currentUserProfile } = useDoc<UserProfile>(userProfileRef);
 
   const auditorsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
@@ -43,47 +48,22 @@ export function RecommendAuditorDialog({ children, contractId }: RecommendAudito
 
   const { data: auditors, isLoading: isLoadingAuditors, error } = useCollection<AuditorProfile>(auditorsQuery);
 
-  const handleSendRequest = async () => {
-    if (!user || !selectedAuditor) {
-      toast({ variant: 'destructive', title: 'Error', description: 'No auditor selected or you are not logged in.' });
-      return;
-    }
-    setIsLoading(true);
-    
-    try {
-      const contractRef = doc(firestore, 'users', user.uid, 'contracts', contractId);
-      await updateDoc(contractRef, {
-        status: 'In Review',
-        // In a real app, you would add this to a subcollection or a dedicated 'review_requests' collection.
-        // For simplicity, we'll just update the status and assigned auditor ID.
-        auditorId: selectedAuditor.id
-      });
-
-      toast({
-        title: 'Request Sent',
-        description: `Your request has been sent to ${selectedAuditor.displayName}.`,
-      });
-      setOpen(false);
-      setSelectedAuditor(null);
-    } catch (error: any) {
-      toast({
-        variant: 'destructive',
-        title: 'Failed to send request',
-        description: error.message,
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const renderContent = () => {
     if (isLoadingAuditors) {
       return (
-        <>
-          <Skeleton className="h-16 w-full" />
-          <Skeleton className="h-16 w-full" />
-          <Skeleton className="h-16 w-full" />
-        </>
+        <div className="space-y-4">
+          {[...Array(3)].map((_, i) => (
+            <Card key={i}>
+                <CardHeader className="flex flex-row items-center gap-4 pb-4">
+                    <Skeleton className="h-12 w-12 rounded-full" />
+                    <div className="flex-1 space-y-2">
+                        <Skeleton className="h-4 w-3/4" />
+                        <Skeleton className="h-4 w-1/2" />
+                    </div>
+                </CardHeader>
+            </Card>
+          ))}
+        </div>
       );
     }
 
@@ -93,36 +73,38 @@ export function RecommendAuditorDialog({ children, contractId }: RecommendAudito
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Error</AlertTitle>
           <AlertDescription>
-            Could not load the list of auditors due to a permissions issue. Our team has been notified.
+            Could not load the list of auditors. Please try again later.
           </AlertDescription>
         </Alert>
-      )
+      );
     }
 
     if (auditors && auditors.length > 0) {
-      return auditors.map((auditor) => (
-        <button
-          key={auditor.id}
-          className={`w-full p-3 rounded-lg border text-left transition-colors flex items-start gap-4 ${selectedAuditor?.id === auditor.id ? 'border-primary bg-accent' : 'hover:bg-accent/50'}`}
-          onClick={() => setSelectedAuditor(auditor)}
-        >
-          <Avatar>
-            <AvatarImage src={auditor.avatarUrl} alt={auditor.displayName} />
-            <AvatarFallback>{auditor.displayName?.charAt(0)}</AvatarFallback>
-          </Avatar>
-          <div className="flex-1">
-            <div className="font-semibold">{auditor.displayName}</div>
-            <div className="text-sm text-muted-foreground">{auditor.firm}</div>
-              {auditor.specialization && (
-                <div className="flex flex-wrap gap-1 mt-2">
-                  {(Array.isArray(auditor.specialization) ? auditor.specialization : [auditor.specialization]).map(spec => (
-                      <Badge key={spec} variant="secondary">{spec}</Badge>
-                  ))}
+      return (
+        <div className="space-y-4">
+          {auditors.map((auditor) => (
+             <RequestReviewDialog key={auditor.id} contract={contract} auditor={auditor} currentUserProfile={currentUserProfile}>
+                <div className="w-full p-3 rounded-lg border text-left transition-colors flex items-start gap-4 hover:bg-accent/50 cursor-pointer">
+                    <Avatar className="h-12 w-12">
+                        <AvatarImage src={auditor.avatarUrl} alt={auditor.displayName} />
+                        <AvatarFallback>{auditor.displayName?.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1">
+                        <div className="font-semibold">{auditor.displayName}</div>
+                        <div className="text-sm text-muted-foreground">{auditor.firm || 'Independent'}</div>
+                        {auditor.specialization && (
+                            <div className="flex flex-wrap gap-1 mt-2">
+                            {(Array.isArray(auditor.specialization) ? auditor.specialization : [auditor.specialization]).map(spec => (
+                                <Badge key={spec} variant="secondary">{spec}</Badge>
+                            ))}
+                            </div>
+                        )}
+                    </div>
                 </div>
-              )}
-          </div>
-        </button>
-      ));
+            </RequestReviewDialog>
+          ))}
+        </div>
+      );
     }
 
     return <p className="text-center text-muted-foreground py-10">No auditors found.</p>;
@@ -134,23 +116,16 @@ export function RecommendAuditorDialog({ children, contractId }: RecommendAudito
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Recommend an Auditor</DialogTitle>
+          <DialogTitle>Request an Auditor</DialogTitle>
           <DialogDescription>
-            Select an auditor to request a review for your contract.
+            Select an expert to review your contract. They will be sent a request to begin the review process.
           </DialogDescription>
         </DialogHeader>
-        <ScrollArea className="h-72 my-4">
+        <ScrollArea className="h-96 my-4">
             <div className="space-y-4 pr-4">
               {renderContent()}
             </div>
         </ScrollArea>
-        <DialogFooter>
-          <Button variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
-          <Button onClick={handleSendRequest} disabled={!selectedAuditor || isLoading}>
-            {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
-            Send Request
-          </Button>
-        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

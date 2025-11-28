@@ -139,15 +139,13 @@ export function ReviewRequests() {
         const auditorPublicRef = doc(firestore, 'auditors', user.uid);
 
         if (newStatus === 'rejected') {
-            batch.update(contractRef, { 
-                status: 'Action Required',
-                auditorId: null,
-                reviewRequestId: null
-            });
-            // The request is done, so we can delete it.
-            batch.delete(requestRef);
+            batch.update(requestRef, { status: 'rejected' });
+            // The request is done, so we can delete it after a short delay or leave it as rejected.
+            // For now, we'll leave it marked as rejected.
+            // A cleanup function could remove old rejected requests.
         } else { // accepted
             batch.update(requestRef, { status: 'accepted' });
+            // This status on the contract itself drives the main UI state.
             batch.update(contractRef, { status: 'In Review' });
             // Increment active contract count for both user and public profiles
             batch.update(auditorUserRef, { currentActiveContracts: increment(1) });
