@@ -90,7 +90,7 @@ export function UploadContractDialog() {
             title: file.name,
             userId: user.uid,
             description,
-            status: 'Completed',
+            status: 'Pending',
             uploadDate: serverTimestamp(),
             fileName: file.name,
             aiAnalysis: {
